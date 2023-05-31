@@ -3,6 +3,6 @@
 </template>
 
 <script setup>
-import NavigationBarTop from "./components/NavigationBarTop/NavigationBarTop.vue";
+import NavigationBarTop from "./components/NavigationBarTop/NavigationBar.vue";
 </script>
 <style scoped></style>
