@@ -5,6 +5,7 @@ import { ElLoading } from "element-plus";
 const myAxios = axios.create({
     // 环境切换
     // baseURL: process.env.NODE.ENV === "production" ? "http://127.0.0.1:3007/api" : "https://",
+
     baseURL: "http://127.0.0.1:3007/api",
     headers: { token: localStorage.getItem("token") || "" },
     timeout: 5000,
@@ -27,12 +28,12 @@ myAxios.interceptors.request.use(
 // 响应拦截器
 myAxios.interceptors.response.use(
     res => {
-        if (res.data.code !== 0) {
+        if (res.status !== 200) {
             loadingInstance.close();
             return "请求数据失败";
         }
         loadingInstance.close();
-        return res.data;
+        return res;
     },
     err => {
         if (err) {

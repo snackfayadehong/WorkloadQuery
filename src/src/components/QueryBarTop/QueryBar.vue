@@ -16,7 +16,10 @@ import { ref } from "vue";
 
 const queryDate = ref("");
 
-const query = () => {};
+const query = async () => {
+    const res = await myAxios.post("/post");
+    console.log(res.data);
+};
 </script>
 <style scoped>
 .dateTime-select {
