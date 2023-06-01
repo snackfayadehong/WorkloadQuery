@@ -3,17 +3,20 @@
         <div class="block">
             <p class="dateTime-select">时间区间:</p>
             <el-config-provider>
-                <el-date-picker v-model="value" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始日期" end-placeholder="结束日期" />
+                <el-date-picker v-model="queryDate" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始日期" end-placeholder="结束日期" />
             </el-config-provider>
         </div>
-        <el-button type="primary" class="qry-btn">查询</el-button>
+        <el-button type="primary" class="qry-btn" @click="query">查询</el-button>
     </div>
 </template>
 
 <script setup>
+import myAxios from "../../api/myAxios.js";
 import { ref } from "vue";
 
-const value = ref("");
+const queryDate = ref("");
+
+const query = () => {};
 </script>
 <style scoped>
 .dateTime-select {
