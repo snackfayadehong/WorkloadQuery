@@ -2,7 +2,6 @@ package main
 
 import (
 	clientDb "WorkloadQuery/db"
-	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -13,14 +12,10 @@ type Employee struct {
 }
 
 func main() {
-	user := Employee{}
 	r := gin.Default()
 	r.Use(Cors()) // 跨域
 	r.POST("/api/post", func(c *gin.Context) {
-		clientDb.ProdAcceptQuery("2023-04-01", "2023-05-01")
-		clientDb.DB.Select("HRCode,EmployeeName").First(&user)
-		u, _ := json.Marshal(user)
-		c.String(http.StatusOK, string(u))
+		clientDb.UserWorkloadQuery("2023-04-01", "2023-05-01")
 	})
 	err := r.Run("127.0.0.1:3007")
 	if err != nil {
