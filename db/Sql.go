@@ -2,11 +2,11 @@ package clientDb
 
 // UserProdAcceptSql 入库信息
 const UserProdAcceptSql = `
-select a.Oper ,COUNT( b.SpecModelName )as prodSpecNum ,count(distinct billno) as billNum,CONVERT(varchar,CONVERT(decimal(18,4),sum(b.qty * b.BuyPrice))) as totalAmount from T_Prod_Enter a
+select a.MEnName ,COUNT( b.SpecModelName )as prodSpecNum ,count(distinct billno) as billNum,CONVERT(varchar,CONVERT(decimal(18,4),sum(b.qty * b.BuyPrice))) as totalAmount from T_Prod_Enter a
 left join T_ProdEnter_Detail b on (a.Reg_id=b.Reg_id)
 where  a.billstate  in ('41','51')
 and a.EnterDate>= ? and a.EnterDate<= ?
-group by a.Oper`
+group by a.MenName`
 
 // UserProdDpcSql 出库信息
 const UserProdDpcSql = `select a.BLMakerName,COUNT(b.ProductInfoID) as DpSpecNum ,
