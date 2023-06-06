@@ -5,7 +5,6 @@ import ElementPlus from "element-plus";
 import zhCn from "element-plus/dist/locale/zh-cn.mjs"; // 组件中文化
 
 const app = createApp(App);
-
 // 中文
 app.use(ElementPlus, {
     locale: zhCn

@@ -1,13 +1,12 @@
 import axios from "axios";
 import { ElLoading } from "element-plus";
+import "element-plus/theme-chalk/el-loading.css";
 
 // 自定义axios实例
 const myAxios = axios.create({
     // 环境切换
     // baseURL: process.env.NODE.ENV === "production" ? "http://127.0.0.1:3007/api" : "https://",
-
     baseURL: "http://127.0.0.1:3007/api",
-    headers: { token: localStorage.getItem("token") || "" },
     timeout: 5000,
     withCredentialsL: false //跨域请求需要凭证
 });
@@ -17,14 +16,15 @@ myAxios.defaults.headers.post["Content-Type"] = "application/json;charset=UTF-8"
 let loadingInstance = null;
 // 请求拦截器
 myAxios.interceptors.request.use(
-    config => {
-        const token = localStorage.getItem("token");
+    req => {
         loadingInstance = ElLoading.service({ fullscreen: true });
-        return config;
+        return req;
     },
-    err => Promise.reject(err)
+    err => {
+        loadingInstance.close();
+        return Promise.reject(err);
+    }
 );
-
 // 响应拦截器
 myAxios.interceptors.response.use(
     res => {
@@ -36,9 +36,8 @@ myAxios.interceptors.response.use(
         return res;
     },
     err => {
-        if (err) {
-            return Promise.reject(err);
-        }
+        loadingInstance.close();
+        return Promise.reject(err);
     }
 );
 

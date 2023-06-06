@@ -24,16 +24,19 @@ type RefundProd struct {
 	RefTotal string `gorm:"column:RefTotalAmount"`
 }
 type UserWorkloadInfo struct {
-	Name        string `json:"name"`
-	ProdAcSpec  int    `json:"prodAcSpec"`
-	ProdAcBill  int    `json:"prodAcBill"`
-	ProdAcTotal string `json:"prodAcTotal"`
-	ProdDpSpec  int    `json:"prodDpSpec"`
-	ProdDpBill  int    `json:"prodDpBill"`
-	ProdDpTotal string `json:"prodDpTotal"`
-	RefSpec     int    `json:"refSpec"`
-	RefBill     int    `json:"refBill"`
-	RefTotal    string `json:"refTotal"`
+	Name             string `json:"name"`
+	ProdAcSpec       int    `json:"prodAcSpec"`
+	ProdAcBill       int    `json:"prodAcBill"`
+	ProdAcTotal      string `json:"prodAcTotal"`
+	ProdDpSpec       int    `json:"prodDpSpec"`
+	ProdDpBill       int    `json:"prodDpBill"`
+	ProdDpTotal      string `json:"prodDpTotal"`
+	RefSpec          int    `json:"refSpec"`
+	RefBill          int    `json:"refBill"`
+	RefTotal         string `json:"refTotal"`
+	TotalBillAmount  int    `json:"total_bill_amount"`
+	TotalSpecAmount  int    `json:"total_spec_amount"`
+	TotalTotalAmount string `json:"total_total_amount"`
 }
 
 // UserWorkloadQuery  工作量查询
@@ -72,7 +75,7 @@ func UserWorkloadQuery(startTime string, endTime string) []UserWorkloadInfo {
 			usm := UserWorkloadMap[RefProd[i].Name]
 			usm.Name = RefProd[i].Name
 			usm.RefBill = RefProd[i].RefBill
-			usm.RefSpec = RefProd[i].RefSpec
+			usm.RefSpec = RefProd[i].RefBill
 			usm.RefTotal = RefProd[i].RefTotal
 			UserWorkloadMap[RefProd[i].Name] = usm
 		}

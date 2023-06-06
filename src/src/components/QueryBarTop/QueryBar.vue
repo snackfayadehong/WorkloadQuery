@@ -14,12 +14,18 @@
 import myAxios from "../../api/myAxios.js";
 import { ref } from "vue";
 import bus from "../../eventBus";
+import dayjs from "dayjs";
 
+var end = dayjs().format("YYYY-MM-DD");
+var start = dayjs().subtract(6, "day").format("YYYY-MM-DD");
 const queryDate = ref("");
-
+queryDate.value = [start, end];
 const query = async () => {
     var value = JSON.parse(JSON.stringify(queryDate.value));
     const res = await myAxios.post("/getWorkload", { startTime: value[0], endTime: value[1] });
+    if (res == "") {
+        alert("无数据");
+    }
     bus.emit("getData", res.data.Data);
 };
 </script>

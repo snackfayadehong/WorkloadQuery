@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"net/http"
@@ -17,8 +16,6 @@ type QueryTime struct {
 func CheckTime(c *gin.Context) {
 	var qt QueryTime
 	err := c.ShouldBindBodyWith(&qt, binding.JSON)
-	fmt.Println(err)
-	fmt.Println(qt)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"msg":  "无效请求数据",
