@@ -1,10 +1,1 @@
-{
-    "Server": { "Ip": "127.0.0.1", "Port": "3007", "RunModel": "debug" },
-    "DBClient": {
-        "ip": "127.0.0.1",
-        "username": "sa",
-        "password": "20010126",
-        "db_name": "WZ_MY",
-        "isEc": 1
-    }
-}
+{"Server":{"Ip":"127.0.0.1","Port":"3007","RunModel":"debug"},"DBClient":{"ip":"127.0.0.1","username":"sa","password":"20010126","db_name":"WZ_MY","isEc":0}}

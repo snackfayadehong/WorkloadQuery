@@ -7,12 +7,14 @@ import (
 	"WorkloadQuery/service"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 func main() {
 	r := gin.New()
 	r.Use(Cors()) // 跨域
+	// defer logFile.Close()
 	// r.Use(gin.LoggerWithConfig(*logConfig))
 	// r.Use(gin.Recovery())
 	r.Use(logger.GinLogger, logger.GinRecovery(true))
@@ -22,7 +24,8 @@ func main() {
 	}
 	err := r.Run(fmt.Sprintf("%s:%s", clientDb.Configs.Server.IP, clientDb.Configs.Server.Port))
 	if err != nil {
-		panic(err)
+		zap.L().Error("ERROR", zap.Error(err))
+		return
 	}
 }
 
@@ -47,12 +50,13 @@ func Cors() gin.HandlerFunc {
 
 // 初始化程序
 func init() {
-	err := logger.InitLog()
+	err := clientDb.Init()
 	if err != nil {
 		panic(err)
 	}
-	err = clientDb.Init()
+	err = logger.InitLog()
 	if err != nil {
-		panic(err)
+		zap.L().Error("ERROR:", zap.Error(err))
+		return
 	}
 }
