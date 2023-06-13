@@ -2,10 +2,12 @@ package logger
 
 import (
 	clientDb "WorkloadQuery/db"
+	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/lestrrat/go-file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io"
 	"net"
 	"net/http/httputil"
 	"os"
@@ -25,7 +27,7 @@ func InitLog() (logFile *os.File, logConfig *gin.LoggerConfig, err error) {
 	// 创建Core三大件，进行初始化
 	writeSyncer := getLogWriter("logs/")
 	encoder := getEncoder()
-	// 创建核心-->如果是dev模式，就在控制台和文件都打印，否则就只写到文件中
+	// 创建核心-->如果是debug模式，就在控制台和文件都打印，否则就只写到文件中
 	var core zapcore.Core
 	if clientDb.Configs.Server.RunModel == "debug" {
 		// 开发模式，日志输出到终端
@@ -41,7 +43,8 @@ func InitLog() (logFile *os.File, logConfig *gin.LoggerConfig, err error) {
 
 	// core := zapcore.NewCore(encoder, writeSyncer, level)
 	// 创建 logger 对象
-	log := zap.New(core, zap.AddCaller())
+	// Warn()/Error()等级别的日志会输出堆栈，Debug()/Info()这些级别不会
+	log := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zap.WarnLevel))
 	// 替换全局的 logger, 后续在其他包中只需使用zap.L()调用即可
 	zap.ReplaceGlobals(log)
 	return
@@ -90,11 +93,11 @@ func getEncoder() zapcore.Encoder {
 
 // 获取切割的问题，给初始化logger使用的
 func getLogWriter(filename string) zapcore.WriteSyncer {
-	hook, _ := rotatelogs.New(filename + "%Y%m%d." + "log")
-	rotatelogs.WithLinkName(filename)
-	rotatelogs.WithMaxAge(time.Hour * 24 * 60)
-	// rotatelogs.WithRotationTime(time.Hour * 24)
-	rotatelogs.WithRotationTime(time.Minute * 1)
+	hook, _ := rotatelogs.New(
+		filename+"%Y%m%d"+".log",
+		rotatelogs.WithLinkName(filename),
+		rotatelogs.WithMaxAge(time.Hour*24*30),
+		rotatelogs.WithRotationTime(time.Hour*24))
 	return zapcore.AddSync(hook)
 }
 
@@ -103,15 +106,21 @@ func GinLogger(c *gin.Context) {
 	logger := zap.L()
 	start := time.Now()
 	path := c.Request.URL.Path
-	query := c.Request.URL.RawQuery
-	c.Next() // 执行视图函数
+	buf := make([]byte, 1024)
+	n, _ := c.Request.Body.Read(buf)
+	// 去除转义字符
+	reqBody := string(buf[0:n])
+	r := strings.NewReplacer(" ", "", "\r", "", "\n", "", "\"", "")
+	reqData := r.Replace(reqBody)
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(buf)) // 将读取后的字节流重新放入body 避免后续程序取不到body参数
+	c.Next()                                            // 执行视图函数
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
 	logger.Info(path,
 		zap.Int("status", c.Writer.Status()),
 		zap.String("method", c.Request.Method),
 		zap.String("path", path),
-		zap.String("query", query),
+		zap.String("query", reqData),
 		zap.String("ip", c.ClientIP()),
 		zap.String("user-agent", c.Request.UserAgent()),
 		zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
@@ -135,7 +144,7 @@ func GinRecovery(stack bool) gin.HandlerFunc {
 						}
 					}
 				}
-				// httputil包预先准备好的DumpRequest方法
+				// http util包预先准备好的DumpRequest方法
 				httpRequest, _ := httputil.DumpRequest(c.Request, false)
 				if brokenPipe {
 					logger.Error(c.Request.URL.Path,
@@ -147,7 +156,7 @@ func GinRecovery(stack bool) gin.HandlerFunc {
 					c.Abort()
 					return
 				}
-				//  这个不必须，检查是否存在断开的连接(broken pipe或者connection reset by peer)---------结束--------
+				//  这个不必须，检查是否存在断开的连接(broken pipe或者connection reset by peer)
 				// 是否打印堆栈信息，使用的是debug.Stack()，传入false，在日志中就没有堆栈信息
 				if stack {
 					logger.Error("[Recovery from panic]",
