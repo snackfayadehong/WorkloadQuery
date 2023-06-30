@@ -21,6 +21,7 @@ func main() {
 	router := r.Group("/api")
 	{
 		router.POST("/getWorkload", middleware.CheckTime, service.GetWorkload)
+		router.POST("/getNoAccountEntry", middleware.CheckTime, service.GetNoAccountEntry)
 	}
 	err := r.Run(fmt.Sprintf("%s:%s", clientDb.Configs.Server.IP, clientDb.Configs.Server.Port))
 	if err != nil {
