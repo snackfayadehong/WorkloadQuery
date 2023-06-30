@@ -79,3 +79,17 @@ WHERE
 	AND b.IsVoid = 0 
 GROUP BY
 	d.EmployeeName`
+
+// NoAccountEntrySql 科室调拨未上账单据查询
+const NoAccountEntrySql = `SELECT 
+DepartmentCollarCode
+,BLDate
+,LeadingDepartmentName
+,LeaderName
+,TreasuryDepartmentName
+,BLMakerName
+from TB_DepartmentCollar 
+where 
+TreasuryDepartment = '200346' and Status = 61
+and BLDate <= ? 
+Order by DepartmentCollarCode`
