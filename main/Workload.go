@@ -36,8 +36,11 @@ func Cors() gin.HandlerFunc {
 		// c.Writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
 		// c.Writer.Header().Set("Access-Control-Allow-Methods", "POST")
 		// c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type,Content-Length")
-		// c.Header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
-		c.Header("Access-Control-Allow-Origin", "http://172.21.1.158:5173")
+		if clientDb.Configs.Server.RunModel == "debug" {
+			c.Header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
+		} else {
+			c.Header("Access-Control-Allow-Origin", "http://172.21.1.158:5173")
+		}
 		c.Header("Access-Control-Allow-Headers", "Content-Type,AccessToken, Authorization, Token")
 		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS")
 		c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
