@@ -33,7 +33,7 @@ myAxios.interceptors.response.use(
             return "请求数据失败";
         }
         loadingInstance.close();
-        return res;
+        return res.data;
     },
     err => {
         loadingInstance.close();
