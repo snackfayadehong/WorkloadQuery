@@ -30,7 +30,8 @@ myAxios.interceptors.response.use(
     res => {
         if (res.status !== 200) {
             loadingInstance.close();
-            return "请求数据失败";
+            alert(res.statusText);
+            return;
         }
         loadingInstance.close();
         return res.data;
