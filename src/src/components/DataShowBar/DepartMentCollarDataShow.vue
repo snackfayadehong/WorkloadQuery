@@ -7,6 +7,7 @@
         <el-table-column prop="LeaderName" label="领用人" align="center" />
         <el-table-column prop="TreasuryDepartmentName" label="出库科室" align="center" />
         <el-table-column prop="BLDate" label="库房审核时间" align="center" />
+        <el-table-column prop="Flag" label="状态" align="center" />
     </el-table>
 </template>
 
