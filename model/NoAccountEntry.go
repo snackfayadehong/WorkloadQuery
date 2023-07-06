@@ -9,4 +9,5 @@ type NoAccountEntry struct {
 	LeaderName             string `gorm:"LeaderName"`                  // 领用人
 	TreasuryDepartmentName string `gorm:"TreasuryDepartmentName"`      // 出库科室
 	BLMakerName            string `gorm:"BLMakerName"`                 // 制单人
+	Flag                   string `gorm:"Flag"`                        // 状态
 }
