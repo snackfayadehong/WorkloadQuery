@@ -25,3 +25,4 @@ src/.vscode
 *.njsproj
 *.sln
 *.sw?
+/src/env/.env.production
