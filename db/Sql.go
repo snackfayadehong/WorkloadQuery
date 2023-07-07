@@ -16,6 +16,7 @@ FROM (
 ) AS subQuery
 GROUP BY MEnName) as sp on sp.MEnName = a.MEnName
 where  a.billstate  in ('41','51')
+  and b.IsVoid = 0
 and a.EnterDate>= ?  and a.EnterDate<= ?
 group by a.MenName , sp.prodSpecNum
 `
@@ -43,6 +44,7 @@ FROM
 GROUP BY BLMakerName) as dp on dp.BLMakerName = a.BLMakerName
 WHERE
 	a.Status IN ( '21', '51', '61' ) 
+  	AND b.IsVoid = 0
 	AND a.TreasuryDepartment = '200346' 
 	AND a.BLDate>= ?
 	AND a.BLDate<= ?
