@@ -1,7 +1,7 @@
 {
     "name": "workloadquery",
     "private": true,
-    "version": "0.0.0",
+    "version": "0.1.0",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -16,7 +16,6 @@
         "lodash": "^4.17.21",
         "mitt": "^3.0.0",
         "vue": "^3.2.47",
-        "xlsx": "^0.18.5",
         "xlsx-js-style": "^1.2.0"
     },
     "devDependencies": {
