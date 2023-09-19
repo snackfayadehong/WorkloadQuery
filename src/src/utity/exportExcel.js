@@ -2,6 +2,18 @@ import * as XLSXStyle from "xlsx-js-style";
 import _ from "lodash";
 import { purchaseSummaryFileds, purchaseSummaryDetailFileds } from "../model/purchaseSummary";
 
+const Title = {
+    v: "采购订单",
+    t: "s",
+    s: { font: { bold: true, sz: 13, name: "宋体" }, alignment: { vertical: "center", horizontal: "center" }, fill: { fgColor: { rgb: "87CEEB" } } }
+};
+
+const TitleDetail = {
+    v: "订单明细",
+    t: "s",
+    s: { font: { bold: true, sz: 13, name: "宋体" }, alignment: { vertical: "center", horizontal: "center" }, fill: { fgColor: { rgb: "ffff00" } } }
+};
+
 const ExportExcelUtity = (res, workBookName, type) => {
     let workBook = XLSXStyle.utils.book_new();
 
@@ -15,7 +27,7 @@ const ExportExcelUtity = (res, workBookName, type) => {
             const header = {
                 v: supplierName,
                 t: "s",
-                s: { font: { bold: false, sz: 18, name: "宋体" }, alignment: { vertical: "center", horizontal: "center" } }
+                s: { font: { bold: true, sz: 18, name: "宋体" }, alignment: { vertical: "center", horizontal: "center" } }
             };
 
             XLSXStyle.utils.sheet_add_aoa(jsonWorksheet, [[header]]);
@@ -31,8 +43,8 @@ const ExportExcelUtity = (res, workBookName, type) => {
                         translatedItem[purchaseSummaryFileds[key]] = item[key];
                     }
                 }
-                XLSXStyle.utils.sheet_add_json(jsonWorksheet, [{ "": "采购订单" }], { origin: -1 }); // 小标题
-                XLSXStyle.utils.sheet_add_json(jsonWorksheet, [translatedItem], { origin: -1 });
+                XLSXStyle.utils.sheet_add_json(jsonWorksheet, [{ "": Title }], { origin: -1 }); // 小标题
+                XLSXStyle.utils.sheet_add_json(jsonWorksheet, [translatedItem], { origin: -1 }); // 订单
                 const childData = item.children || [];
                 delete item.children;
 
@@ -47,8 +59,8 @@ const ExportExcelUtity = (res, workBookName, type) => {
                         }
                         return translatedChildItem;
                     });
-                    XLSXStyle.utils.sheet_add_json(jsonWorksheet, [{ "": "订单明细" }], { origin: -1 }); // 小标题
-                    XLSXStyle.utils.sheet_add_json(jsonWorksheet, translatedChildData, { origin: -1 });
+                    XLSXStyle.utils.sheet_add_json(jsonWorksheet, [{ "": TitleDetail }], { origin: -1 }); // 小标题
+                    XLSXStyle.utils.sheet_add_json(jsonWorksheet, translatedChildData, { origin: -1 }); // 订单明细
                 }
             });
             workBook.SheetNames.push(supplierName);

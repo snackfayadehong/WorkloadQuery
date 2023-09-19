@@ -47,6 +47,7 @@ const query = async () => {
     // 获取父组件名称,根据夫组件名称查询不同数据
     // commName = currentCpn.parent.proxy.name;
     // console.log(commName);
+
     let Timevalue = JSON.parse(JSON.stringify(queryDate.value));
     if (props.parentName == "") {
         alert("组件名为空");
@@ -91,7 +92,9 @@ const exportExcel = () => {
         alert("请先查询信息");
         reutrn;
     }
-    ExportExcelUtity(res.Data, "123.xlsx", "NodeliveredPurchase");
+    let now = new Date();
+    let ExcelName = "采购订单未到货信息_" + dayjs(now).format("YYYY-MM-DD_HH:mm:ss") + ".xlsx";
+    ExportExcelUtity(res.Data, ExcelName, "NodeliveredPurchase");
 };
 </script>
 <style scoped>
