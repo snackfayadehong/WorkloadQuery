@@ -5,11 +5,13 @@ import "element-plus/theme-chalk/el-loading.css";
 // 自定义axios实例
 const myAxios = axios.create({
     // 环境切换
-    baseURL: import.meta.env.mode === "production" ? import.meta.env.VITE_BASE_URL : import.meta.env.VITE_BASE_URL,
+    baseURL: import.meta.env.MODE === "production" ? import.meta.env.VITE_HTTP : import.meta.env.VITE_BASE_URL,
     // baseURL: "http://172.21.1.75:3007/api",
+    // baseURL: "http://127.0.0.1:3007/api",
     timeout: 10000,
     withCredentialsL: false //跨域请求需要凭证
 });
+
 myAxios.defaults.headers.post["Content-Type"] = "application/json;charset=UTF-8";
 
 let loadingInstance = null;
