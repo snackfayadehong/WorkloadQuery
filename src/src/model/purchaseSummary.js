@@ -1,5 +1,5 @@
 // 字段映射
-export const purchaseSummaryFileds = {
+export let PurchaseSummaryFileds = {
     PurchaseSummaryID: "订单ID",
     PurchaseSummaryCode: "订单号",
     AllMoney: "订单金额",
@@ -12,7 +12,7 @@ export const purchaseSummaryFileds = {
     Remark: "订单备注"
 };
 
-export const purchaseSummaryDetailFileds = {
+export let PurchaseSummaryDetailFileds = {
     PurchaseSummaryID: "(明细)订单ID",
     Code: "院内代码",
     ProdName: "产品名称",
