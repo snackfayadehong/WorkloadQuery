@@ -83,20 +83,35 @@ GROUP BY
 	d.EmployeeName`
 
 // NoAccountEntrySql 科室调拨未上账单据查询
-const NoAccountEntrySql = `SELECT
-DepartmentCollarCode
-,BLDate
-,LeadingDepartmentName
-,LeaderName
-,TreasuryDepartmentName
-,BLMakerName
-,'已审核(未出库)' as Flag
-from TB_DepartmentCollar
-where
-TreasuryDepartment = '200346' and Status = 61
-and BLDate >= ?
-and BLDate <= ?
-Order by LeaderName`
+const NoAccountEntrySql = `select 
+a.DepartmentCollarCode
+,a.LeadingDepartmentName
+,a.LeaderName
+,a.BLMakerName
+,CONVERT(varchar,a.CreateTime,120) as CreateTime
+,CONVERT(varchar,GETDATE(),120) as StatisticalTime
+,prod.Code 
+,prod.Name as ProdName
+,ISNULL(mode.name,'') + '|' + ISNULL(spec.Name,'') as SpecModelName
+,unit.Name  as UnitName
+,CONVERT(decimal(18,0),prod.ChargePrice) as ChargePrice
+,CONVERT(decimal(18,0),sum(b.amount)) as Amount
+from 
+TB_DepartmentCollar a 
+left join TB_DepartmentCollarDetail b on a.DepartmentCollarID = b.DepartmentCollarID
+left join TB_ProductInfo prod on b.ProductInfoID = prod.ProductInfoID	
+left join TB_SpecUnit spec on prod.Specification = spec.SpecID
+left join TB_SpecUnit unit on unit.SpecID = prod.Unit
+left join TB_SpecUnit mode on mode.SpecID = prod.Model
+where 
+a.BLDate>=? and a.BLDate <= ?
+and a.Status = 61 and b.IsVoid = 0 
+and TreasuryDepartment in('200416','200346','200418','200420')
+group by a.DepartmentCollarCode,a.LeadingDepartmentName,a.LeaderName,a.BLMakerName,
+a.CreateTime,prod.Code,prod.Name,mode.name,spec.Name
+,unit.Name,prod.ChargePrice	
+order by a.DepartmentCollarCode
+`
 
 // UnCheckBillSql 计费未核对数据查询
 const UnCheckBillSql = `select
