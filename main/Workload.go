@@ -24,6 +24,14 @@ func main() {
 		router.POST("/getNoAccountEntry", middleware.CheckTime, service.GetNoAccountEntry)
 		router.POST("/getUnCheckBills", middleware.CheckTime, service.GetUnCheckBills)
 		router.POST("/getNoDeliveredPurchaseSummary", middleware.CheckTime, service.GetNoDeliveredPurchaseSummary)
+		v1 := router.Group("/v1")
+		{
+			v1.POST("/getabc", func(context *gin.Context) {
+				context.JSON(200, gin.H{
+					"code": 1,
+				})
+			})
+		}
 	}
 	err := r.Run(fmt.Sprintf("%s:%s", clientDb.Configs.Server.IP, clientDb.Configs.Server.Port))
 	if err != nil {
