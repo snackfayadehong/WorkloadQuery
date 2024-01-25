@@ -61,6 +61,7 @@ func Init() error {
 	// dsn := "sqlserver://sa:密码@127.0.0.1:1433?database=dbStatus&encrypt=disable"
 	dsn := fmt.Sprintf("sqlserver://%s:%s@%s?database=%s&encrypt=disable", Configs.DBClient.Username, DbPwd, Configs.DBClient.IP, Configs.DBClient.DbName)
 	DB, _ = gorm.Open(sqlserver.Open(dsn), &gorm.Config{
+		PrepareStmt: true, // 执行任何 SQL 时都创建并缓存预编译语句，可以提高后续的调用速度
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix:   "TB_",
 			SingularTable: true,
