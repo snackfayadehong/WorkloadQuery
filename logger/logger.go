@@ -2,12 +2,12 @@ package logger
 
 import (
 	clientDb "WorkloadQuery/db"
+	"WorkloadQuery/middleware"
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/lestrrat/go-file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io"
 	"net"
 	"net/http/httputil"
 	"os"
@@ -96,19 +96,34 @@ func getLogWriter(filename string, leavel zapcore.Level) zapcore.WriteSyncer {
 func GinLogger(c *gin.Context) {
 	logger := zap.L()
 	start := time.Now()
-	buf := make([]byte, 1024)
-	n, _ := c.Request.Body.Read(buf)
-	// 去除转义字符
-	reqBody := string(buf[0:n])
-	r := strings.NewReplacer(" ", "", "\r", "", "\n", "", "\"", "")
-	reqData := r.Replace(reqBody)
-	c.Request.Body = io.NopCloser(bytes.NewBuffer(buf)) // 将读取后的字节流重新放入body 避免后续程序取不到body参数
-	c.Next()                                            // 执行视图函数
+	// 在处理请求前获取body
+	// 2024-1-26 以前获取入参的方法Make 1024的buf会导致入参过长时 参数不完整
+	// buf := make([]byte, 1024)
+	// n, _ := c.Request.Body.Read(buf)
+	// // 去除转义字符
+	// reqBody := string(buf[0:n])
+	// r := strings.NewReplacer(" ", "", "\r", "", "\n", "", "\"", "")
+	// reqData := r.Replace(reqBody)
+	// c.Request.Body = io.NopCloser(bytes.NewBuffer(buf)) // 将读取后的字节流重新放入body 避免后续程序取不到body参数
+	// 方法2
+	// var bodyBytes []byte
+	// if c.Request.Body != nil {
+	// 	bodyBytes, _ = io.ReadAll(c.Request.Body)
+	// }
+	// c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	// reqData := string(bodyBytes)
+	// 方法3
+	w := middleware.ResponseWriter{
+		ResponseWriter: c.Writer,
+		B:              bytes.NewBuffer([]byte{}),
+	}
+	c.Writer = w
+	c.Next() // 执行视图函数
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
 	sugar := logger.Sugar()
 	sugar.Infof("\r事件:接口调用\rIP：%s\rURL：%s\rMethod：%s\r入参：%s\rError：%s\rCost：%s\r----------------------------------------------------------------------------", c.ClientIP(),
-		c.Request.URL.Path, c.Request.Method, reqData, c.Errors.ByType(gin.ErrorTypePrivate).String(), cost)
+		c.Request.URL.Path, c.Request.Method, w.B.String(), c.Errors.ByType(gin.ErrorTypePrivate).String(), cost)
 	// sugar.Info(
 	// 	"Status", c.Writer.Status(),
 	// 	"method", c.Request.Method,
