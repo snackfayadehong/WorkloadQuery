@@ -2,12 +2,13 @@ package model
 
 // ProductInfo 查询数据库产品字典信息
 type ProductInfo struct {
+	ProductInfoID         int    `gorm:"column:ProductInfoID"`         // 产品ID
 	Code                  string `gorm:"column:Code"`                  // 院内代码
 	HospitalName          string `gorm:"column:HospitalName"`          // 院内名称
 	HospitalSpec          string `gorm:"column:HospitalSpec"`          // 院内规格
 	YGCGID                string `gorm:"column:YGCGID"`                // 网采平台产品ID
 	HisProductCode7Source string `gorm:"column:HisProductCode7Source"` // 集采平台产品临时ID 审核过后会改变HisProductCode7值
-	HisProductCode7Status string `gorm:"column:HisProductCode7Status"` // 集采平台产品ID状态
+	HisProductCode7Status int    `gorm:"column:HisProductCode7Status"` // 集采平台产品ID状态
 	CusCategoryCode       string `gorm:"column:CusCategoryCode"`       // 104分类编码
 	ParentCusCategoryCode string `gorm:"column:ParentCusCategoryCode"` // 104分类编码(第3级)
 	TenderCode            string `gorm:"column:TenderCode"`            // 交易编码

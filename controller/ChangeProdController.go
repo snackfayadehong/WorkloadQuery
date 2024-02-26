@@ -4,6 +4,7 @@ import (
 	clientDb "WorkloadQuery/db"
 	"WorkloadQuery/model"
 	"fmt"
+	"time"
 )
 
 /*
@@ -26,6 +27,9 @@ type RequestInfo struct {
 	C []ChangeInfoElement
 }
 
+const UpdateCateCodeSql = "Update TB_ProductInfo Set CategoryCode = ? where ProductInfoID = ?"
+const UpdateProdSql = "Update TB_ProductInfo set HospitalSpec = ?,HisProductCode3 = ? where ProductInfoID =?"
+
 /*
 ChangeProductInfo
 更改产品基本信息
@@ -44,8 +48,44 @@ func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo) {
 			// 1. 检查104分类；
 			// 入参中104分类为第3级,物资系统为第4级,查询物资系统第4级代码对应的第3级与入参是否相同
 			// 如果不相同则修改物资为第3级,相同则不更新
-			if *item.CategoryCode != (*prod)[pIndex].ParentCusCategoryCode {
+			if *item.CategoryCode != "" && *item.CategoryCode != (*prod)[pIndex].ParentCusCategoryCode {
 				// 修改为第3级
+				clientDb.DB.Exec(UpdateCateCodeSql, item.CategoryCode, (*prod)[pIndex].ProductInfoID)
+			}
+			// 2. 更新其他信息
+			if *item.HospitalSpec != "" && *item.HospitalName != "" {
+				clientDb.DB.Exec(UpdateProdSql, item.HospitalSpec, item.HospitalName, (*prod)[pIndex].ProductInfoID)
+			}
+			// 3. 判断集采审核状态修改集采信息
+			// 1 已审核  null '' 0 为未审核
+			if *item.YGCGID != "" {
+				if (*prod)[pIndex].HisProductCode7Status == 1 {
+					clientDb.DB.Exec("Update TB_ProductInfo Set HisProductCode7 = ? where ProductInfoID= ?", item.YGCGID, (*prod)[pIndex].ProductInfoID)
+				} else {
+					clientDb.DB.Exec("Update TB_ProductInfo Set HisProductCode7Source = ? where ProductInfoID= ?", item.YGCGID, (*prod)[pIndex].ProductInfoID)
+				}
+			}
+			// 4. 更新TradeCode
+			if *item.TradeCode != "" {
+				clientDb.DB.Exec("Update TB_TenderCode Set TenderCode =?,UpdateTime = GETDATE() where ProductInfoID = ?", item.TradeCode, (*prod)[pIndex].ProductInfoID)
+			}
+			// 5. 更新医保代码
+			if *item.MedicareCode != "" {
+				clientDb.DB.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ?", item.MedicareCode, (*prod)[pIndex].MedicareCode)
+			}
+			// 6. 写入系统编码系统编号
+			if (*prod)[pIndex].SysCode == "" && (*prod)[pIndex].SysId == "" { // 如果同时为空则代表无记录
+				if *item.SysID != "" || *item.SysCode != "" {
+					clientDb.DB.Exec("Insert Into TB_ProductInfoJCSysCode(Prod_Id, SysId, SysCode, IsVoid, CreateTime) values (?,?,?,?,?)",
+						(*prod)[pIndex].ProductInfoID, item.SysID, item.SysCode, 0, time.Now())
+				}
+			} else {
+				if *item.SysID != "" {
+					clientDb.DB.Exec("Update TB_ProductInfoJCSysCode set SysId = ? where Prod_Id =?", item.SysID, (*prod)[pIndex].ProductInfoID)
+				}
+				if *item.SysCode != "" {
+					clientDb.DB.Exec("Update TB_ProductInfoJCSysCode set SysCode = ? where Prod_Id =?", item.SysCode, (*prod)[pIndex].ProductInfoID)
+				}
 			}
 		}
 	}

@@ -6,7 +6,8 @@ package clientDb
 
 // QueryProd 查询产品信息
 const QueryProd = `SELECT
-	prod.Code -- 院内代码
+    prod.ProductInfoID -- 产品ID
+	,prod.Code -- 院内代码
 	,prod.HisProductCode3 AS HospitalName -- 院内名称
 	,prod.HospitalSpec -- 院内规格
 	,prod.HisProductCode7 AS YGCGID -- 网采平台产品ID
