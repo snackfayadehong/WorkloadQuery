@@ -1,13 +1,13 @@
 package logger
 
 import (
-	clientDb "WorkloadQuery/db"
-	"WorkloadQuery/middleware"
+	"WorkloadQuery/conf"
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/lestrrat/go-file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io"
 	"net"
 	"net/http/httputil"
 	"os"
@@ -16,6 +16,7 @@ import (
 	"time"
 )
 
+const LoggerEndStr = "----------------------------------------------------------------------------"
 const InfoLevel = zapcore.InfoLevel
 const ErrorLevel = zapcore.ErrorLevel
 
@@ -38,7 +39,7 @@ func InitLog() (err error) {
 	errorSyncer := getLogWriter("logs/", ErrorLevel)
 	// 创建核心-->如果是debug模式，就在控制台和文件都打印，否则就只写到文件中
 	var core zapcore.Core
-	if clientDb.Configs.Server.RunModel == "debug" {
+	if conf.Configs.Server.RunModel == "debug" {
 		// 开发模式，日志输出到终端
 		// NewTee创建一个核心，将日志条目复制到两个或多个底层核心中。
 		core = zapcore.NewTee(
@@ -94,7 +95,7 @@ func getLogWriter(filename string, leavel zapcore.Level) zapcore.WriteSyncer {
 
 // GinLogger 用于替换gin框架的Logger中间件，不传参数，直接这样写
 func GinLogger(c *gin.Context) {
-	logger := zap.L()
+	sugar := zap.L().Sugar()
 	start := time.Now()
 	// 在处理请求前获取body
 	// 2024-1-26 以前获取入参的方法Make 1024的buf会导致入参过长时 参数不完整
@@ -106,34 +107,23 @@ func GinLogger(c *gin.Context) {
 	// reqData := r.Replace(reqBody)
 	// c.Request.Body = io.NopCloser(bytes.NewBuffer(buf)) // 将读取后的字节流重新放入body 避免后续程序取不到body参数
 	// 方法2
-	// var bodyBytes []byte
-	// if c.Request.Body != nil {
-	// 	bodyBytes, _ = io.ReadAll(c.Request.Body)
-	// }
-	// c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	// reqData := string(bodyBytes)
-	// 方法3
-	w := middleware.ResponseWriter{
-		ResponseWriter: c.Writer,
-		B:              bytes.NewBuffer([]byte{}),
+	var bodyBytes []byte
+	if c.Request.Body != nil {
+		bodyBytes, _ = io.ReadAll(c.Request.Body)
 	}
-	c.Writer = w
-	c.Next() // 执行视图函数
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	reqData := string(bodyBytes)
+	// // 方法3
+	// w := middleware.ResponseWriter{
+	// 	ResponseWriter: c.Writer,
+	// 	B:              bytes.NewBuffer([]byte{}),
+	// }
+	// c.Writer = w
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
-	sugar := logger.Sugar()
-	sugar.Infof("\r事件:接口调用\rIP：%s\rURL：%s\rMethod：%s\r入参：%s\rError：%s\rCost：%s\r----------------------------------------------------------------------------", c.ClientIP(),
-		c.Request.URL.Path, c.Request.Method, w.B.String(), c.Errors.ByType(gin.ErrorTypePrivate).String(), cost)
-	// sugar.Info(
-	// 	"Status", c.Writer.Status(),
-	// 	"method", c.Request.Method,
-	// 	"url", c.Request.URL.Path,
-	// 	"request", reqData,
-	// 	"ip", c.ClientIP(),
-	// 	"user-agent", c.Request.UserAgent(),
-	// 	"err", c.Errors.ByType(gin.ErrorTypePrivate).String(),
-	// 	"cost", cost,
-	// )
+	sugar.Infof("\r事件:接口调用\rIP：%s\rURL：%s\rMethod：%s\r入参：%s\rError：%s\rCost：%s\r%s", c.ClientIP(),
+		c.Request.URL.Path, c.Request.Method, reqData, c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
+	c.Next() // 执行视图函数
 }
 
 // GinRecovery 用于替换gin框架的Recovery中间件，因为传入参数，再包一层
