@@ -3,7 +3,7 @@
     "DBClient": {
         "ip": "127.0.0.1",
         "username": "sa",
-        "password": "20010126",
+        "password": "2001026",
         "db_name": "WZ_MY",
         "isEc": 0
     }
