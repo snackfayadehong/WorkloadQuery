@@ -4,7 +4,7 @@ import (
 	clientDb "WorkloadQuery/db"
 	"WorkloadQuery/model"
 	"fmt"
-	"time"
+	"gorm.io/gorm"
 )
 
 /*
@@ -28,13 +28,21 @@ type RequestInfo struct {
 }
 
 const UpdateCateCodeSql = "Update TB_ProductInfo Set CategoryCode = ? where ProductInfoID = ?"
-const UpdateProdSql = "Update TB_ProductInfo set HospitalSpec = ?,HisProductCode3 = ? where ProductInfoID =?"
+const UpdateHospitalSpecSql = "Update TB_ProductInfo set HospitalSpec = ? where ProductInfoID = ?"
+const UpdateHospitalNameSql = "Update TB_ProductInfo Set HisProductCode3 =? where ProductInfoID = ?"
 
 /*
 ChangeProductInfo
 更改产品基本信息
 */
-func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo) {
+func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo) error {
+	// 开启事务
+	tx := clientDb.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 	// 查找入参和物资系统返回查询结果中相同的记录 时间复杂度O(M+N)
 	// 使用Map存储prod切片中的Code
 	pMap := make(map[string]int, len(*prod))
@@ -45,50 +53,40 @@ func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo) {
 	for _, item := range i.C {
 		if pIndex, ok := pMap[item.Code]; ok {
 			// 修改字典信息的业务逻辑
-			// 1. 检查104分类；
-			// 入参中104分类为第3级,物资系统为第4级,查询物资系统第4级代码对应的第3级与入参是否相同
-			// 如果不相同则修改物资为第3级,相同则不更新
-			if *item.CategoryCode != "" && *item.CategoryCode != (*prod)[pIndex].ParentCusCategoryCode {
-				// 修改为第3级
-				clientDb.DB.Exec(UpdateCateCodeSql, item.CategoryCode, (*prod)[pIndex].ProductInfoID)
+			// 1. 104分类；
+			err := UpdateCategoryCode(tx, &item, (*prod)[pIndex])
+			if err != nil {
+				return err
 			}
-			// 2. 更新其他信息
-			if *item.HospitalSpec != "" && *item.HospitalName != "" {
-				clientDb.DB.Exec(UpdateProdSql, item.HospitalSpec, item.HospitalName, (*prod)[pIndex].ProductInfoID)
+			// 2. 更新院内产品名称、规格信息
+			err = UpdateHospitalInfo(tx, &item, (*prod)[pIndex])
+			if err != nil {
+				return err
 			}
-			// 3. 判断集采审核状态修改集采信息
-			// 1 已审核  null '' 0 为未审核
-			if *item.YGCGID != "" {
-				if (*prod)[pIndex].HisProductCode7Status == 1 {
-					clientDb.DB.Exec("Update TB_ProductInfo Set HisProductCode7 = ? where ProductInfoID= ?", item.YGCGID, (*prod)[pIndex].ProductInfoID)
-				} else {
-					clientDb.DB.Exec("Update TB_ProductInfo Set HisProductCode7Source = ? where ProductInfoID= ?", item.YGCGID, (*prod)[pIndex].ProductInfoID)
-				}
+			// 3. 判断集采审核状态并更新集采信息
+			err = UpdateYgcgidInfo(tx, &item, (*prod)[pIndex])
+			if err != nil {
+				return err
 			}
-			// 4. 更新TradeCode
-			if *item.TradeCode != "" {
-				clientDb.DB.Exec("Update TB_TenderCode Set TenderCode =?,UpdateTime = GETDATE() where ProductInfoID = ?", item.TradeCode, (*prod)[pIndex].ProductInfoID)
+			// 4. 更新TradeCode流水号
+			err = UpdateTradeCodeInfo(tx, &item, (*prod)[pIndex])
+			if err != nil {
+				return err
 			}
 			// 5. 更新医保代码
-			if *item.MedicareCode != "" {
-				clientDb.DB.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ?", item.MedicareCode, (*prod)[pIndex].MedicareCode)
+			err = UpdateMedicareCodeInfo(tx, &item, (*prod)[pIndex])
+			if err != nil {
+				return err
 			}
 			// 6. 写入系统编码系统编号
-			if (*prod)[pIndex].SysCode == "" && (*prod)[pIndex].SysId == "" { // 如果同时为空则代表无记录
-				if *item.SysID != "" || *item.SysCode != "" {
-					clientDb.DB.Exec("Insert Into TB_ProductInfoJCSysCode(Prod_Id, SysId, SysCode, IsVoid, CreateTime) values (?,?,?,?,?)",
-						(*prod)[pIndex].ProductInfoID, item.SysID, item.SysCode, 0, time.Now())
-				}
-			} else {
-				if *item.SysID != "" {
-					clientDb.DB.Exec("Update TB_ProductInfoJCSysCode set SysId = ? where Prod_Id =?", item.SysID, (*prod)[pIndex].ProductInfoID)
-				}
-				if *item.SysCode != "" {
-					clientDb.DB.Exec("Update TB_ProductInfoJCSysCode set SysCode = ? where Prod_Id =?", item.SysCode, (*prod)[pIndex].ProductInfoID)
-				}
+			err = UpdateJCSysInfo(tx, &item, (*prod)[pIndex])
+			if err != nil {
+				return err
 			}
 		}
 	}
+	tx.Commit()
+	return nil
 }
 
 /*
@@ -96,15 +94,14 @@ GetProductInfo
 获取物资产品字典信息,返回不重复的字典信息
 string返回记录哪些字典信息是重复的
 */
-func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, string) {
+func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, error) {
 	var prod *[]model.ProductInfo         // 原始记录
 	var NoRepeatProd []model.ProductInfo  // 保留不重复的记录
-	var msg string                        // 返回重复记录信息
 	var repeatMap = make(map[string]bool) // 重复记录
-	clientDb.DB.Raw(clientDb.QueryProd, Where).Find(&prod)
-	// 如果只有一行记录直接返回
-	if len(*prod) == 1 {
-		return prod, msg
+	var msg string
+	db := clientDb.DB.Raw(clientDb.QueryProd, Where).Find(&prod)
+	if db.Error != nil {
+		return prod, db.Error
 	}
 	// 检查 查询结果中同一院内编码是否存在多条记录,且非停用或停供产品
 	seen := make(map[string]bool)
@@ -123,5 +120,119 @@ func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, stri
 	for key := range repeatMap {
 		msg += fmt.Sprintf("%s有重复字典记录或供货关系异常;", key)
 	}
-	return &NoRepeatProd, msg
+	return &NoRepeatProd, fmt.Errorf(msg)
+}
+
+// UpdateCategoryCode 更新104分类
+func UpdateCategoryCode(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+	// 入参中104分类为第3级,物资系统为第4级,查询物资系统第4级代码对应的第3级与入参是否相同
+	// 如果不相同则修改物资为第3级,相同则不更新
+	if *item.CategoryCode != "" && *item.CategoryCode != prod.ParentCusCategoryCode {
+		// 修改为第3级
+		db := tx.Exec(UpdateCateCodeSql, item.CategoryCode, prod.ProductInfoID)
+		if db.Error != nil {
+			return db.Error
+		}
+	}
+	return nil
+}
+
+// UpdateHospitalInfo 更新院内名称、院内规格
+func UpdateHospitalInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+	if *item.HospitalSpec != "" {
+		db := tx.Exec(UpdateHospitalSpecSql, item.HospitalSpec, prod.ProductInfoID)
+		if db.Error != nil {
+			tx.Rollback()
+			return db.Error
+		}
+	}
+	if *item.HospitalName != "" {
+		db := tx.Exec(UpdateHospitalNameSql, item.HospitalName, prod.ProductInfoID)
+		if db.Error != nil {
+			tx.Rollback()
+			return db.Error
+		}
+	}
+	return nil
+}
+
+// UpdateYgcgidInfo 更新网采平台产品ID
+func UpdateYgcgidInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+	// 1 已审核  null '' 0 为未审核
+	if *item.YGCGID != "" {
+		if prod.HisProductCode7Status == 1 {
+			db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ? where ProductInfoID= ?", item.YGCGID,
+				prod.ProductInfoID)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+		} else {
+			db := tx.Exec("Update TB_ProductInfo Set HisProductCode7Source = ? where ProductInfoID= ?", item.YGCGID,
+				prod.ProductInfoID)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+		}
+	}
+	return nil
+}
+
+// UpdateTradeCodeInfo 更新流水号
+func UpdateTradeCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+	if *item.TradeCode != "" {
+		db := tx.Exec("Update TB_TenderCode Set TenderCode =?,UpdateTime = GETDATE() where ProductInfoID = ?",
+			item.TradeCode, prod.ProductInfoID)
+		if db.Error != nil {
+			tx.Rollback()
+			return db.Error
+		}
+	}
+	return nil
+}
+
+// UpdateMedicareCodeInfo 更新医保代码
+func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+	if *item.MedicareCode != "" {
+		db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ?",
+			item.MedicareCode, prod.ProductInfoID)
+		if db.Error != nil {
+			tx.Rollback()
+			return db.Error
+		}
+	}
+	return nil
+}
+
+// UpdateJCSysInfo 更新集采系统信息
+func UpdateJCSysInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+	if prod.SysCode == "" && prod.SysId == "" { // 如果同时为空则代表无记录
+		if *item.SysID != "" || *item.SysCode != "" {
+			db := tx.Exec("Insert Into TB_ProductInfoJCSysCode(Prod_Id, SysId, SysCode, IsVoid, CreateTime) values (?,?,?,?,getdate())",
+				prod.ProductInfoID, item.SysID, item.SysCode, 0)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+		}
+	} else {
+		if *item.SysID != "" {
+			db := tx.Exec("Update TB_ProductInfoJCSysCode set SysId = ? where Prod_Id =?", item.SysID,
+				prod.ProductInfoID)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+		}
+		if *item.SysCode != "" {
+			db := tx.Exec("Update TB_ProductInfoJCSysCode set SysCode = ? where Prod_Id =?", item.SysCode,
+				prod.ProductInfoID)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+		}
+	}
+	return nil
 }

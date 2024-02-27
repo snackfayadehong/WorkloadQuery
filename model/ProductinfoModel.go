@@ -20,8 +20,8 @@ type ProductInfo struct {
 }
 
 type GetProduct interface {
-	GetProductInfo(Where []string) (*[]ProductInfo, string)
+	GetProductInfo(Where []string) (*[]ProductInfo, error)
 }
 type ChangeProduct interface {
-	ChangeProductInfo(*[]ProductInfo)
+	ChangeProductInfo(*[]ProductInfo) error
 }

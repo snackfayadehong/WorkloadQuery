@@ -2,9 +2,11 @@ package service
 
 import (
 	"WorkloadQuery/controller"
+	"WorkloadQuery/logger"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -30,12 +32,28 @@ func ChangeProductInfoService(c *gin.Context) {
 		} else {
 			res.Code = 1
 			res.Message = fmt.Sprintf("%s入参存在多条;", v.Code)
+			zap.L().Sugar().Infof("\r事件:接口返回\r出参:%s\r%s", res.Message, logger.LoggerEndStr)
 			c.JSON(http.StatusCreated, res)
 			return
 		}
 	}
 	// 获取怡道系统产品基本信息
-	_, msg := req.GetProductInfo(where)
-	res.Message = msg
-	c.JSON(http.StatusCreated, res)
+	_, err := req.GetProductInfo(where)
+	if err != nil {
+		res.Code = 1
+		res.Message = err.Error()
+		c.JSON(http.StatusCreated, res)
+		zap.L().Sugar().Infof("\r事件:接口返回\r出参:%s\r%s", res.Message, logger.LoggerEndStr)
+		return
+	}
+	// err2 := req.ChangeProductInfo(prod)
+	// if err2 != nil {
+	// 	res.Code = 1
+	// 	res.Message = err.Error()
+	// 	c.JSON(http.StatusCreated, res)
+	// 	zap.L().Sugar().Infof("\r事件:接口返回\r出参%s\r%s", res.Message, logger.LoggerEndStr)
+	// 	return
+	// }
+	// c.JSON(http.StatusCreated, res)
+	// zap.L().Sugar().Infof("\r事件:接口返回\r出参%s\r%s", res.Message, logger.LoggerEndStr)
 }
