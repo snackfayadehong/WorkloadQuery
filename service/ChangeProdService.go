@@ -38,7 +38,7 @@ func ChangeProductInfoService(c *gin.Context) {
 		}
 	}
 	// 获取怡道系统产品基本信息
-	_, err := req.GetProductInfo(where)
+	prod, err := req.GetProductInfo(where)
 	if err != nil {
 		res.Code = 1
 		res.Message = err.Error()
@@ -46,14 +46,14 @@ func ChangeProductInfoService(c *gin.Context) {
 		zap.L().Sugar().Infof("\r事件:接口返回\r出参:%s\r%s", res.Message, logger.LoggerEndStr)
 		return
 	}
-	// err2 := req.ChangeProductInfo(prod)
-	// if err2 != nil {
-	// 	res.Code = 1
-	// 	res.Message = err.Error()
-	// 	c.JSON(http.StatusCreated, res)
-	// 	zap.L().Sugar().Infof("\r事件:接口返回\r出参%s\r%s", res.Message, logger.LoggerEndStr)
-	// 	return
-	// }
-	// c.JSON(http.StatusCreated, res)
-	// zap.L().Sugar().Infof("\r事件:接口返回\r出参%s\r%s", res.Message, logger.LoggerEndStr)
+	err2 := req.ChangeProductInfo(prod, c.ClientIP())
+	if err2 != nil {
+		res.Code = 1
+		res.Message = err2.Error()
+		c.JSON(http.StatusCreated, res)
+		zap.L().Sugar().Infof("\r事件:接口返回\r出参%s\r%s", res.Message, logger.LoggerEndStr)
+		return
+	}
+	c.JSON(http.StatusCreated, res)
+	zap.L().Sugar().Infof("\r事件:接口返回\r出参%s\r%s", res.Message, logger.LoggerEndStr)
 }
