@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"WorkloadQuery/controller"
+	"WorkloadQuery/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"net/http"
@@ -11,6 +13,21 @@ type QueryTime struct {
 	Start string `json:"startTime" binding:"required"`
 	End   string `json:"endTime" binding:"required"`
 }
+
+func CheckRequestProdInfo(c *gin.Context) {
+	var req controller.ChangeInfoElement
+	var res service.Response
+	err := c.ShouldBindBodyWith(&req, binding.JSON)
+	if err != nil {
+		res.Code = 1
+		res.Message = "无效数据"
+		c.JSON(http.StatusCreated, res)
+	}
+	c.Abort()
+}
+
+// 数据校验
+// 1. 校验104分类
 
 // CheckTime 校验请求数据是否为合法时间
 func CheckTime(c *gin.Context) {
