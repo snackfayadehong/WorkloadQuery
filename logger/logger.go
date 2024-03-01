@@ -121,8 +121,9 @@ func GinLogger(c *gin.Context) {
 	// c.Writer = w
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
-	sugar.Infof("\r事件:接口调用\rIP：%s\rURL：%s\rMethod：%s\r入参：%s\rError：%s\rCost：%s\r%s", c.ClientIP(),
-		c.Request.URL.Path, c.Request.Method, reqData, c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
+	sugar.Infof("\r\n事件:接口调用\r\nIP：%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
+		c.ClientIP(), c.Request.URL.Path, c.Request.Method, reqData,
+		c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
 	c.Next() // 执行视图函数
 }
 

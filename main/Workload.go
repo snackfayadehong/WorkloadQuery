@@ -27,7 +27,7 @@ func main() {
 		router.POST("/getNoDeliveredPurchaseSummary", middleware.CheckTime, service.GetNoDeliveredPurchaseSummary)
 		v1 := router.Group("/v1")
 		{
-			v1.POST("/change_prod", service.ChangeProductInfoService)
+			v1.POST("/change_prod", middleware.CheckRequestProdInfo, service.ChangeProductInfoService)
 		}
 	}
 	err := r.Run(fmt.Sprintf("%s:%s", conf.Configs.Server.IP, conf.Configs.Server.Port))

@@ -28,7 +28,7 @@ type RequestInfo struct {
 	C []ChangeInfoElement
 }
 
-const UpdateCateCodeSql = "Update TB_ProductInfo Set CategoryCode = ? where ProductInfoID = ?"
+const UpdateCateCodeSql = "Update TB_ProductInfo Set CusCategoryCode = ? where ProductInfoID = ?"
 const UpdateHospitalSpecSql = "Update TB_ProductInfo set HospitalSpec = ? where ProductInfoID = ?"
 const UpdateHospitalNameSql = "Update TB_ProductInfo Set HisProductCode3 =? where ProductInfoID = ?"
 
@@ -148,7 +148,7 @@ func UpdateCategoryCode(tx *gorm.DB, item *ChangeInfoElement, prod model.Product
 			tx.Rollback()
 			return db.Error
 		}
-		*context = fmt.Sprintf("产品id:%v,CategoryCode(%s)变更为(%s);", prod.ProductInfoID, prod.CusCategoryCode, *item.CategoryCode)
+		*context = fmt.Sprintf("产品id:%v,CusCategoryCode(%s)变更为(%s);", prod.ProductInfoID, prod.CusCategoryCode, *item.CategoryCode)
 	}
 	return nil
 }

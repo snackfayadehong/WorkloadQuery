@@ -2,10 +2,14 @@ package middleware
 
 import (
 	"WorkloadQuery/controller"
+	"WorkloadQuery/logger"
 	"WorkloadQuery/service"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"go.uber.org/zap"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -15,15 +19,38 @@ type QueryTime struct {
 }
 
 func CheckRequestProdInfo(c *gin.Context) {
-	var req controller.ChangeInfoElement
+	var req controller.RequestInfo
 	var res service.Response
-	err := c.ShouldBindBodyWith(&req, binding.JSON)
+	err := c.ShouldBindBodyWith(&req.C, binding.JSON)
 	if err != nil {
 		res.Code = 1
-		res.Message = "无效数据"
+		res.Message = err.Error()
 		c.JSON(http.StatusCreated, res)
+		zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		c.Abort()
 	}
-	c.Abort()
+	for _, v := range req.C {
+		err = checkCode(v)
+		if err != nil {
+			res.Code = 1
+			res.Message = err.Error()
+			c.JSON(http.StatusCreated, res)
+			zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+			c.Abort()
+			break
+		}
+	}
+}
+
+// 校验104分类和院内代码
+func checkCode(element controller.ChangeInfoElement) error {
+	if len(element.Code) != 14 {
+		return fmt.Errorf("失败,不正确的院内代码:%s", element.Code)
+	}
+	if len(*element.CategoryCode) != 10 || !strings.HasSuffix(*element.CategoryCode, "0000") {
+		return fmt.Errorf("失败;院内代码:%s,104分类:%s非三级目录", element.Code, *element.CategoryCode)
+	}
+	return nil
 }
 
 // 数据校验

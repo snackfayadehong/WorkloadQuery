@@ -60,8 +60,8 @@ func (m *MyWriter) Printf(format string, v ...interface{}) {
 	if len(v) <= 3 { // 执行sql语句len(v)>3
 		return
 	}
-	logstr := fmt.Sprintf("\r事件：SQL执行\r调用：%s\r时间：%.3fms\r行数：%v\rSQL：%s", v...)
-	m.mlog.Infof("%s\r%s\r", logstr, logger2.LoggerEndStr)
+	logstr := fmt.Sprintf("\r\n事件：SQL执行\r\n调用：%s\r\n时间：%.3fms\r\n行数：%v\r\nSQL：%s", v...)
+	m.mlog.Infof("%s\r\n%s\r\n", logstr, logger2.LoggerEndStr)
 }
 func newMyWriter() *MyWriter {
 	log := zap.L().Sugar()
