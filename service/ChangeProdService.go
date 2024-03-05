@@ -15,9 +15,8 @@ type Response struct {
 	Message string
 }
 
-var res Response
-
 func ChangeProductInfoService(c *gin.Context) {
+	var res Response
 	// 查询条件
 	var where []string
 	// 入参

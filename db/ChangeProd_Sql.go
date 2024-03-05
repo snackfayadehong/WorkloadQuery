@@ -22,6 +22,7 @@ const QueryProd = `SELECT
 	END ParentCusCategoryCode
 	,td.TenderCode AS TradeCode -- 交易编码
 	,yb.MedicareCode -- 医保编码
+    ,prod.ChargePrice -- 收费价格
 	,jc.SysCode -- 集采系统编码
 	,jc.SysId -- 集采系统编号
 	,prod.IsVoid -- 0：启用 1：停用

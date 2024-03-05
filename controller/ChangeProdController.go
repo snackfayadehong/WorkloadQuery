@@ -141,7 +141,7 @@ func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, erro
 func UpdateCategoryCode(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	// 入参中104分类为第3级,物资系统为第4级,查询物资系统第4级代码对应的第3级与入参是否相同
 	// 如果不相同则修改物资为第3级,相同则不更新
-	if *item.CategoryCode != prod.ParentCusCategoryCode {
+	if *item.CategoryCode != prod.ParentCusCategoryCode && *item.CategoryCode != prod.CusCategoryCode {
 		// 修改为第3级
 		db := tx.Exec(UpdateCateCodeSql, item.CategoryCode, prod.ProductInfoID)
 		if db.Error != nil {
@@ -161,7 +161,8 @@ func UpdateHospitalInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.Product
 			tx.Rollback()
 			return db.Error
 		}
-
+		*context += fmt.Sprintf("HospitalSpec:院内规格(%s)变更为(%s);HospitalName:院内名称(%s)变更为(%s);", prod.HospitalSpec, *item.HospitalSpec,
+			prod.HospitalName, *item.HospitalName)
 	}
 	if *item.HospitalName != "" && *item.HospitalName != prod.HospitalName {
 		db := tx.Exec(UpdateHospitalNameSql, item.HospitalName, prod.ProductInfoID)
@@ -203,28 +204,52 @@ func UpdateYgcgidInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductIn
 
 // UpdateTradeCodeInfo 更新流水号
 func UpdateTradeCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
-	if *item.TradeCode != "" && *item.TradeCode != prod.TradeCode {
-		db := tx.Exec("Update TB_TenderCode Set TenderCode =?,UpdateTime = GETDATE() where ProductInfoID = ?",
-			item.TradeCode, prod.ProductInfoID)
-		if db.Error != nil {
-			tx.Rollback()
-			return db.Error
+	if *item.TradeCode != "" {
+		if prod.TradeCode != "" && *item.TradeCode != prod.TradeCode {
+			db := tx.Exec("Update TB_TenderCode Set TenderCode =?,UpdateTime = GETDATE() where ProductInfoID = ?",
+				item.TradeCode, prod.ProductInfoID)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+			*context += fmt.Sprintf("TradeCode流水号(%s)变更为%s;", prod.TradeCode, *item.TradeCode)
 		}
-		*context += fmt.Sprintf("TradeCode流水号(%s)变更为%s;", prod.TradeCode, *item.TradeCode)
+		// 插入记录
+		if prod.TradeCode == "" {
+			db := tx.Exec("Insert into TB_TenderCode(productinfoid, tendercode, medinsname, medicaretype, startdate, enddate, isvoid, status, tenderstatus) values (?,?,?,?,?,?,?,?,?)",
+				prod.ProductInfoID, item.TradeCode, "省标", 1, time.Now(), time.Now(), 0, 0, 0)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+			*context += fmt.Sprintf("产品ID(%s)插入流水号(%s)", prod.ProductInfoID, *item.TradeCode)
+		}
 	}
 	return nil
 }
 
 // UpdateMedicareCodeInfo 更新医保代码
 func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
-	if *item.MedicareCode != "" && *item.MedicareCode != prod.MedicareCode {
-		db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ?",
-			item.MedicareCode, prod.ProductInfoID)
-		if db.Error != nil {
-			tx.Rollback()
-			return db.Error
+	if *item.MedicareCode != "" {
+		if prod.MedicareCode != "" && *item.MedicareCode != prod.MedicareCode {
+			db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ?",
+				item.MedicareCode, prod.ProductInfoID)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+			*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s);", prod.MedicareCode, *item.MedicareCode)
 		}
-		*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s);", prod.MedicareCode, *item.MedicareCode)
+		// 插入医保代码
+		if prod.MedicareCode == "" {
+			db := tx.Exec("Insert into TB_ProductChargeRule(productinfoid, pricecharged, medicarecode, medinsname, medicaretype, repayflag, repayratio, addfeeflag, addratiofee, isvoid, medicarecodestatus) values (?,?,?,?,?,?,?,?,?,?,?)",
+				prod.ProductInfoID, prod.ChargePrice, *item.MedicareCode, "城镇医保", 1, 0, 0, 0, 0, 0, 1)
+			if db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+			*context += fmt.Sprintf("产品ID(%v)插入医保代码(%s)", prod.ProductInfoID, *item.MedicareCode)
+		}
 	}
 	return nil
 }

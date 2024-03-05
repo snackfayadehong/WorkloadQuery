@@ -1,5 +1,5 @@
 {
-    "Server": { "Ip": "127.0.0.1", "Port": "3007", "RunModel": "release" },
+    "Server": { "Ip": "127.0.0.1", "Port": "3007", "RunModel": "debug" },
     "DBClient": {
         "ip": "127.0.0.1",
         "username": "sa",
