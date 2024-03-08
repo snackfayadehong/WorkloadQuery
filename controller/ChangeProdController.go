@@ -29,6 +29,14 @@ type RequestInfo struct {
 	C []ChangeInfoElement
 }
 
+// ExceptionProd 异常字典记录
+type ExceptionProd struct {
+	Code     string
+	PurState int
+	IsVoid   int
+	HasError bool
+}
+
 const UpdateCateCodeSql = "Update TB_ProductInfo Set CusCategoryCode = ? where ProductInfoID = ?"
 const UpdateHospitalSpecSql = "Update TB_ProductInfo set HospitalSpec = ? where ProductInfoID = ?"
 const UpdateHospitalNameSql = "Update TB_ProductInfo Set HisProductCode3 =? where ProductInfoID = ?"
@@ -37,7 +45,7 @@ const UpdateHospitalNameSql = "Update TB_ProductInfo Set HisProductCode3 =? wher
 ChangeProductInfo
 更改产品基本信息
 */
-func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo, ip string) error {
+func (i *RequestInfo) ChangeProductInfo(prod []model.ProductInfo, ip string) error {
 	// 开启事务
 	tx := clientDb.DB.Begin()
 	defer func() {
@@ -47,8 +55,8 @@ func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo, ip string) er
 	}()
 	// 查找入参和物资系统返回查询结果中相同的记录 时间复杂度O(M+N)
 	// 使用Map存储prod切片中的Code
-	pMap := make(map[string]int, len(*prod))
-	for index, v := range *prod {
+	pMap := make(map[string]int, len(prod))
+	for index, v := range prod {
 		pMap[v.Code] = index
 	}
 	// 在入参中找到Code相同的
@@ -57,39 +65,39 @@ func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo, ip string) er
 			var updateMsg string
 			// 修改字典信息的业务逻辑
 			// 1. 104分类；
-			err := UpdateCategoryCode(tx, &item, (*prod)[pIndex], &updateMsg)
+			err := UpdateCategoryCode(tx, &item, prod[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 2. 更新院内产品名称、规格信息
-			err = UpdateHospitalInfo(tx, &item, (*prod)[pIndex], &updateMsg)
+			err = UpdateHospitalInfo(tx, &item, prod[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 3. 判断集采审核状态并更新集采信息
-			err = UpdateYgcgidInfo(tx, &item, (*prod)[pIndex], &updateMsg)
+			err = UpdateYgcgidInfo(tx, &item, prod[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 4. 更新TradeCode流水号
-			err = UpdateTradeCodeInfo(tx, &item, (*prod)[pIndex], &updateMsg)
+			err = UpdateTradeCodeInfo(tx, &item, prod[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 5. 更新医保代码
-			err = UpdateMedicareCodeInfo(tx, &item, (*prod)[pIndex], &updateMsg)
+			err = UpdateMedicareCodeInfo(tx, &item, prod[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 6. 写入系统编码系统编号
-			err = UpdateJCSysInfo(tx, &item, (*prod)[pIndex], &updateMsg)
+			err = UpdateJCSysInfo(tx, &item, prod[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 写入日志表
 			if updateMsg != "" {
 				db := tx.Exec("Insert Into TB_PoductInfoChangeLog(Prod_Id,Context,IP,UpdateTime) values(?,?,?,?)",
-					(*prod)[pIndex].ProductInfoID, updateMsg, ip, time.Now())
+					prod[pIndex].ProductInfoID, updateMsg, ip, time.Now())
 				if db.Error != nil {
 					tx.Rollback()
 					return db.Error
@@ -105,10 +113,10 @@ func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo, ip string) er
 GetProductInfo
 获取物资产品字典信息,返回不重复的字典信息
 */
-func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, error) {
-	var prod *[]model.ProductInfo            // 原始记录
-	var NoRepeatProd []model.ProductInfo     // 保留不重复的记录
-	var exceptionMap = make(map[string]bool) // 异常记录
+func (i *RequestInfo) GetProductInfo(Where []string) ([]model.ProductInfo, error) {
+	var prod []model.ProductInfo         // 原始记录
+	var NoRepeatProd []model.ProductInfo // 保留不重复的记录
+	var exception []ExceptionProd        // 异常信息记录
 	var msg string
 	db := clientDb.DB.Raw(clientDb.QueryProd, Where).Find(&prod)
 	if db.Error != nil {
@@ -116,25 +124,35 @@ func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, erro
 	}
 	// 检查 查询结果中同一院内编码是否存在多条记录,且非停用或停供产品
 	seen := make(map[string]bool)
-	for _, el := range *prod {
-		if !seen[el.Code] {
+	exceptionMap := make(map[string]bool)
+	for _, el := range prod {
+		// 只添加供货状态正常的记录
+		if !seen[el.Code] && el.PurState == 0 && el.IsVoid == 0 {
 			seen[el.Code] = true
-			if el.PurState == 0 && el.IsVoid == 0 {
-				NoRepeatProd = append(NoRepeatProd, el)
+			NoRepeatProd = append(NoRepeatProd, el)
+			continue
+		}
+		// 记录异常信息
+		exception = append(exception, ExceptionProd{Code: el.Code, PurState: el.PurState, IsVoid: el.IsVoid, HasError: true})
+	}
+	// 循环异常信息，当异常信息Code在seen正常中存在时，判断供货状态，如果供货状态不正常则跳过，否者记录进行记录并返回
+	// 当异常信息在seen中不存在,记录并返回
+	for _, v := range exception {
+		if seen[v.Code] && v.HasError {
+			if v.PurState != 0 || v.IsVoid != 0 {
 				continue
 			}
 		}
-		if !exceptionMap[el.Code] && seen[el.Code] {
-			exceptionMap[el.Code] = true
+		// 处理异常信息
+		if !exceptionMap[v.Code] {
+			exceptionMap[v.Code] = true
+			msg += fmt.Sprintf("%s有重复记录或供货关系异常", v.Code)
 		}
 	}
-	for key := range exceptionMap {
-		msg += fmt.Sprintf("%s有重复字典记录或供货关系异常;", key)
-	}
 	if msg == "" {
-		return &NoRepeatProd, nil
+		return NoRepeatProd, nil
 	}
-	return &NoRepeatProd, fmt.Errorf(msg)
+	return NoRepeatProd, fmt.Errorf(msg)
 }
 
 // UpdateCategoryCode 更新104分类
@@ -161,8 +179,8 @@ func UpdateHospitalInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.Product
 			tx.Rollback()
 			return db.Error
 		}
-		*context += fmt.Sprintf("HospitalSpec:院内规格(%s)变更为(%s);HospitalName:院内名称(%s)变更为(%s);", prod.HospitalSpec, *item.HospitalSpec,
-			prod.HospitalName, *item.HospitalName)
+		*context += fmt.Sprintf("HospitalSpec:院内规格(%s)变更为(%s);",
+			prod.HospitalSpec, *item.HospitalSpec)
 	}
 	if *item.HospitalName != "" && *item.HospitalName != prod.HospitalName {
 		db := tx.Exec(UpdateHospitalNameSql, item.HospitalName, prod.ProductInfoID)
@@ -170,7 +188,7 @@ func UpdateHospitalInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.Product
 			tx.Rollback()
 			return db.Error
 		}
-		*context += fmt.Sprintf("HospitalSpec:院内规格(%s)变更为(%s);HospitalName:院内名称(%s)变更为(%s);", prod.HospitalSpec, *item.HospitalSpec,
+		*context += fmt.Sprintf("HospitalName:院内名称(%s)变更为(%s);",
 			prod.HospitalName, *item.HospitalName)
 	}
 	return nil
