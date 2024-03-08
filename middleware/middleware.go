@@ -47,8 +47,10 @@ func checkCode(element controller.ChangeInfoElement) error {
 	if len(element.Code) != 14 {
 		return fmt.Errorf("失败,不正确的院内代码:%s", element.Code)
 	}
-	if len(*element.CategoryCode) != 10 || !strings.HasSuffix(*element.CategoryCode, "0000") {
-		return fmt.Errorf("失败;院内代码:%s,104分类:%s非三级目录", element.Code, *element.CategoryCode)
+	if *element.CategoryCode != "" {
+		if len(*element.CategoryCode) != 10 || !strings.HasSuffix(*element.CategoryCode, "0000") {
+			return fmt.Errorf("失败;院内代码:%s,104分类:%s非三级目录", element.Code, *element.CategoryCode)
+		}
 	}
 	return nil
 }

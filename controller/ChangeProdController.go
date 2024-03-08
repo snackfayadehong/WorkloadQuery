@@ -5,6 +5,7 @@ import (
 	"WorkloadQuery/model"
 	"fmt"
 	"gorm.io/gorm"
+	"strings"
 	"time"
 )
 
@@ -47,7 +48,7 @@ func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo, ip string) er
 	// 查找入参和物资系统返回查询结果中相同的记录 时间复杂度O(M+N)
 	// 使用Map存储prod切片中的Code
 	pMap := make(map[string]int, len(*prod))
-	for index, v := range i.C {
+	for index, v := range *prod {
 		pMap[v.Code] = index
 	}
 	// 在入参中找到Code相同的
@@ -103,12 +104,11 @@ func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo, ip string) er
 /*
 GetProductInfo
 获取物资产品字典信息,返回不重复的字典信息
-string返回记录哪些字典信息是重复的
 */
 func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, error) {
-	var prod *[]model.ProductInfo         // 原始记录
-	var NoRepeatProd []model.ProductInfo  // 保留不重复的记录
-	var repeatMap = make(map[string]bool) // 重复记录
+	var prod *[]model.ProductInfo            // 原始记录
+	var NoRepeatProd []model.ProductInfo     // 保留不重复的记录
+	var exceptionMap = make(map[string]bool) // 异常记录
 	var msg string
 	db := clientDb.DB.Raw(clientDb.QueryProd, Where).Find(&prod)
 	if db.Error != nil {
@@ -117,18 +117,18 @@ func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, erro
 	// 检查 查询结果中同一院内编码是否存在多条记录,且非停用或停供产品
 	seen := make(map[string]bool)
 	for _, el := range *prod {
-		// 非停用或者停供且不重复的记录添加到map,和切片中
-		if !seen[el.Code] && el.PurState == 0 && el.IsVoid == 0 {
+		if !seen[el.Code] {
 			seen[el.Code] = true
-			NoRepeatProd = append(NoRepeatProd, el)
-			continue
+			if el.PurState == 0 && el.IsVoid == 0 {
+				NoRepeatProd = append(NoRepeatProd, el)
+				continue
+			}
 		}
-		// 记录哪些是重复的,只记录一次
-		if !repeatMap[el.Code] {
-			repeatMap[el.Code] = true
+		if !exceptionMap[el.Code] && seen[el.Code] {
+			exceptionMap[el.Code] = true
 		}
 	}
-	for key := range repeatMap {
+	for key := range exceptionMap {
 		msg += fmt.Sprintf("%s有重复字典记录或供货关系异常;", key)
 	}
 	if msg == "" {
@@ -141,7 +141,7 @@ func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, erro
 func UpdateCategoryCode(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	// 入参中104分类为第3级,物资系统为第4级,查询物资系统第4级代码对应的第3级与入参是否相同
 	// 如果不相同则修改物资为第3级,相同则不更新
-	if *item.CategoryCode != prod.ParentCusCategoryCode && *item.CategoryCode != prod.CusCategoryCode {
+	if *item.CategoryCode != "" && *item.CategoryCode != prod.ParentCusCategoryCode && *item.CategoryCode != prod.CusCategoryCode {
 		// 修改为第3级
 		db := tx.Exec(UpdateCateCodeSql, item.CategoryCode, prod.ProductInfoID)
 		if db.Error != nil {
@@ -231,7 +231,8 @@ func UpdateTradeCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.Produc
 // UpdateMedicareCodeInfo 更新医保代码
 func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	if *item.MedicareCode != "" {
-		if prod.MedicareCode != "" && *item.MedicareCode != prod.MedicareCode {
+		// prod.MedicareCode不为空,且不以item.MedicareCode开头的则修改
+		if prod.MedicareCode != "" && !strings.HasPrefix(prod.MedicareCode, *item.MedicareCode) {
 			db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ?",
 				item.MedicareCode, prod.ProductInfoID)
 			if db.Error != nil {
