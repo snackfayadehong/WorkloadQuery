@@ -112,6 +112,8 @@ func (i *RequestInfo) ChangeProductInfo(prod []model.ProductInfo, ip string) err
 /*
 GetProductInfo
 获取物资产品字典信息,返回不重复的字典信息
+1. 相同院内编码多条记录，但供货状态PurState或isVoid不同的则跳过,只处理正常记录
+2. 相同院内编码多条记录,供货状态相同,视为异常记录,接口报错返回
 */
 func (i *RequestInfo) GetProductInfo(Where []string) ([]model.ProductInfo, error) {
 	var prod []model.ProductInfo         // 原始记录
@@ -135,8 +137,8 @@ func (i *RequestInfo) GetProductInfo(Where []string) ([]model.ProductInfo, error
 		// 记录异常信息
 		exception = append(exception, ExceptionProd{Code: el.Code, PurState: el.PurState, IsVoid: el.IsVoid, HasError: true})
 	}
-	// 循环异常信息，当异常信息Code在seen正常中存在时，判断供货状态，如果供货状态不正常则跳过，否者记录进行记录并返回
-	// 当异常信息在seen中不存在,记录并返回
+	// 循环异常信息，当异常信息Code在seen正常中存在时，判断供货状态，如果非正常供货状态则跳过，否者说明此记录重复,记录并返回
+	// 当异常信息在seen中不存在,则说明此记录供货关系异常,记录并返回
 	for _, v := range exception {
 		if seen[v.Code] && v.HasError {
 			if v.PurState != 0 || v.IsVoid != 0 {
