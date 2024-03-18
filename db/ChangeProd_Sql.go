@@ -35,6 +35,7 @@ FROM
 	LEFT JOIN TB_ProductChargeRule yb WITH (nolock) ON yb.ProductInfoID = prod.ProductInfoID 
 	AND td.IsVoid = 0 
 	AND yb.MedicareType = 1
+	AND yb.MedicareCodeStatus = 0
 	LEFT JOIN TB_EnterpriseProduct ep  WITH (nolock) ON ep.ProductID = prod.ProductInfoID 
 	AND prod.DefaultSupplierID = ep.EnterpriseID
 	LEFT JOIN TB_ProductInfoJCSysCode jc WITH (nolock) ON jc.Prod_Id = prod.ProductInfoID 

@@ -253,7 +253,7 @@ func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.Pro
 	if *item.MedicareCode != "" {
 		// prod.MedicareCode不为空,且不以item.MedicareCode开头的则修改
 		if prod.MedicareCode != "" && !strings.HasPrefix(prod.MedicareCode, *item.MedicareCode) {
-			db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ?",
+			db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ? and MedicareType = 1 and  MedicareCodeStatus = 0 and IsVoid = 0",
 				item.MedicareCode, prod.ProductInfoID)
 			if db.Error != nil {
 				tx.Rollback()
