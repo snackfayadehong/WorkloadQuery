@@ -74,4 +74,15 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	// 根据配置文件设置选择程序环境
+	switch conf.Configs.Server.RunModel {
+	case "debug":
+		gin.SetMode(gin.DebugMode)
+	case "release":
+		gin.SetMode(gin.ReleaseMode)
+	case "test":
+		gin.SetMode(gin.TestMode)
+	default:
+		gin.SetMode(gin.DebugMode)
+	}
 }
