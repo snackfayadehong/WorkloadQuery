@@ -24,7 +24,7 @@ func ChangeProductInfoService(c *gin.Context) {
 	_ = c.ShouldBindBodyWith(&req.C, binding.JSON)
 	// 将入参多条数据Code整合为一个where条件
 	var seen = make(map[string]bool)
-	for _, v := range req.C {
+	for _, v := range *req.C {
 		if !seen[v.Code] {
 			seen[v.Code] = true
 			where = append(where, v.Code)
@@ -45,14 +45,14 @@ func ChangeProductInfoService(c *gin.Context) {
 		zap.L().Sugar().Infof("\r\n:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
 		return
 	}
-	err2 := req.ChangeProductInfo(prod, c.ClientIP())
+	err2 := req.ChangeMisProductInfo(prod, c.ClientIP())
 	if err2 != nil {
 		res.Code = 1
 		res.Message = err2.Error()
 		c.JSON(http.StatusCreated, res)
-		zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
 		return
 	}
 	c.JSON(http.StatusCreated, res)
-	zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+	zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
 }

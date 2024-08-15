@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"WorkloadQuery/controller"
+	clientDb "WorkloadQuery/db"
 	"WorkloadQuery/logger"
+	"WorkloadQuery/model"
 	"WorkloadQuery/service"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -29,7 +31,7 @@ func CheckRequestProdInfo(c *gin.Context) {
 		zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
 		c.Abort()
 	}
-	for _, v := range req.C {
+	for _, v := range *req.C {
 		err = checkCode(v)
 		if err != nil {
 			res.Code = 1
@@ -43,13 +45,20 @@ func CheckRequestProdInfo(c *gin.Context) {
 }
 
 // 校验104分类和院内代码
-func checkCode(element controller.ChangeInfoElement) error {
+// 增加修改人員信息檢查 2024-07-26
+func checkCode(element model.ChangeInfoElement) error {
+	var row int
+	var sql = "select count(1) from TB_Employee where HisCode = ?"
+	clientDb.DB.Raw(sql, element.HRCode).Find(&row)
+	if row == 0 {
+		return fmt.Errorf("人员信息错误")
+	}
 	if len(element.Code) != 14 {
 		return fmt.Errorf("失败,不正确的院内代码:%s", element.Code)
 	}
-	if *element.CategoryCode != "" {
-		if len(*element.CategoryCode) != 10 || !strings.HasSuffix(*element.CategoryCode, "0000") {
-			return fmt.Errorf("失败;院内代码:%s,104分类:%s非三级目录", element.Code, *element.CategoryCode)
+	if element.CategoryCode != "" {
+		if len(element.CategoryCode) != 10 || !strings.HasSuffix(element.CategoryCode, "0000") {
+			return fmt.Errorf("失败;院内代码:%s,104分类:%s非三级目录", element.Code, element.CategoryCode)
 		}
 	}
 	return nil
