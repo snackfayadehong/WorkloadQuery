@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -25,6 +24,7 @@ type RequestInfo struct {
 const UpdateCateCodeSql = "Update TB_ProductInfo Set CusCategoryCode = ? where ProductInfoID = ?"
 const UpdateHospitalSpecSql = "Update TB_ProductInfo set HospitalSpec = ? where ProductInfoID = ?"
 const UpdateHospitalNameSql = "Update TB_ProductInfo Set HisProductCode3 =? where ProductInfoID = ?"
+const UpdateOpenTenderSql = "Update TB_ProductInfo set OpenTender = ? where ProductInfoID = ?"
 
 func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 	// 1. 查询HIS需要的产品基本信息
@@ -33,35 +33,38 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 	if db.Error != nil {
 		return db.Error
 	}
+	if p.OpenTender == "1" { // 是集采的在产品名称前加(g)
+		his.Ypmc = "(g)" + his.Ypmc
+	}
 	his.Kfbz = p.EighteenProdType // 18类重点监控耗材表示
 	his.Xgczy = p.HRCode          // 修改人员工号
-	val := reflect.ValueOf(&his)
-	if val.Kind() == reflect.Ptr { // 检查 val 是否为指针
-		val = val.Elem() // 获取指针指向的实际值
-	}
-	if val.Kind() == reflect.Struct { // 确保 val 是一个结构体
-		fieldNum := val.NumField() // 获取该结构体有几个字段
-		// 遍历结构体字段
-		for i := 0; i < fieldNum; i++ {
-			field := val.Field(i)
-			if !field.CanSet() { // 检查字段是否可以设置
-				return fmt.Errorf("%s", "value can't be set")
-			}
-			switch field.Kind() {
-			case reflect.String:
-				if field.String() == "" {
-					field.SetString("20240815")
-				}
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				if field.Int() == 0 {
-					field.SetInt(20240815)
-				}
-			default:
-				continue
-			}
-		}
-
-	}
+	//val := reflect.ValueOf(&his)
+	//if val.Kind() == reflect.Ptr { // 检查 val 是否为指针
+	//	val = val.Elem() // 获取指针指向的实际值
+	//}
+	//if val.Kind() == reflect.Struct { // 确保 val 是一个结构体
+	//	fieldNum := val.NumField() // 获取该结构体有几个字段
+	//	// 遍历结构体字段
+	//	for i := 0; i < fieldNum; i++ {
+	//		field := val.Field(i)
+	//		if !field.CanSet() { // 检查字段是否可以设置
+	//			return fmt.Errorf("%s", "value can't be set")
+	//		}
+	//		switch field.Kind() {
+	//		case reflect.String:
+	//			if field.String() == "" {
+	//				field.SetString("20240815")
+	//			}
+	//		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+	//			if field.Int() == 0 {
+	//				field.SetInt(20240815)
+	//			}
+	//		default:
+	//			continue
+	//		}
+	//	}
+	//
+	//}
 	// 2. json序列化
 	data, err := json.Marshal(his)
 	if err != nil {
@@ -112,6 +115,7 @@ func (i *RequestInfo) ChangeMisProductInfo(prod []model.ProductInfo, ip string) 
 	for _, item := range *i.C {
 		if pIndex, ok := pMap[item.Code]; ok {
 			var updateMsg string
+			updateMsg = fmt.Sprintf("产品ID:%v", prod[pIndex].ProductInfoID)
 			// 停供信息（1.直接修改科室领用白名单表状态，2.需要做停供处理的不处理字典信息)
 			switch item.SupplyStatus {
 			case "1":
@@ -151,11 +155,16 @@ func (i *RequestInfo) ChangeMisProductInfo(prod []model.ProductInfo, ip string) 
 				if err != nil {
 					return err
 				}
+				// 7. 更新集采状态
+				err = UpdateProductOpenTender(tx, &item, prod[pIndex], &updateMsg)
+				if err != nil {
+					return err
+				}
 			default:
-				return fmt.Errorf("SupplyStatus不可为空")
+				return fmt.Errorf("入参信息有误")
 			}
 			// 写入日志表
-			if updateMsg != "" {
+			if updateMsg != "" || updateMsg != fmt.Sprintf("产品ID:%v", prod[pIndex].ProductInfoID) {
 				db := tx.Exec("Insert Into TB_PoductInfoChangeLog(Prod_Id,Context,IP,UpdateTime) values(?,?,?,?)",
 					prod[pIndex].ProductInfoID, updateMsg, ip, time.Now())
 				if db.Error != nil {
@@ -222,6 +231,20 @@ func (i *RequestInfo) GetProductInfo(Where []string) ([]model.ProductInfo, error
 	return NoRepeatProd, fmt.Errorf(msg)
 }
 
+// UpdateProductOpenTender 更新产品集采状态
+func UpdateProductOpenTender(tx *gorm.DB, item *model.ChangeInfoElement, prod model.ProductInfo, context *string) error {
+	if item.OpenTender != "" && item.OpenTender != prod.OpenTender {
+		db := tx.Exec(UpdateOpenTenderSql, item.OpenTender, prod.ProductInfoID)
+		if db.Error != nil {
+			tx.Rollback()
+			return db.Error
+		}
+		*context += fmt.Sprintf("OpenTender:集采状态(%s)变更为(%s);",
+			prod.OpenTender, item.OpenTender)
+	}
+	return nil
+}
+
 // UpdateCategoryCode 更新104分类
 func UpdateCategoryCode(tx *gorm.DB, item *model.ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	// 入参中104分类为第3级,物资系统为第4级,查询物资系统第4级代码对应的第3级与入参是否相同
@@ -233,7 +256,7 @@ func UpdateCategoryCode(tx *gorm.DB, item *model.ChangeInfoElement, prod model.P
 			tx.Rollback()
 			return db.Error
 		}
-		*context = fmt.Sprintf("产品id:%v,CusCategoryCode(%s)变更为(%s);", prod.ProductInfoID, prod.CusCategoryCode, item.CategoryCode)
+		*context = fmt.Sprintf("CusCategoryCode(%s)变更为(%s);", prod.CusCategoryCode, item.CategoryCode)
 	}
 	return nil
 }

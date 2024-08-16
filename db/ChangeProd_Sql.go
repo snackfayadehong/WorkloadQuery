@@ -60,10 +60,10 @@ isnull( d.Name, '' ) AS yppp,
 LEFT( isnull( gi.PinYin, gi2.PinYin ), 11) AS zjm,  
 LEFT(ISNULL(gi2.Name, a.Name), 11) as ypbm,
 LEFT(ISNULL(gi2.PinYin, gi.PinYin), 11) as pym,  
-left(isnull(gi2.name,a.name	),11) as ypbm1,
-left(isnull(gi2.PinYin, gi.PinYin), 11) as pym1,
-left(isnull(gi2.name,a.name	),11) as ypbm2,
-left(isnull(gi2.PinYin, gi.PinYin), 11) as pym2,
+--left(isnull(gi2.name,a.name	),11) as ypbm1,
+--left(isnull(gi2.PinYin, gi.PinYin), 11) as pym1,
+--left(isnull(gi2.name,a.name	),11) as ypbm2,
+--left(isnull(gi2.PinYin, gi.PinYin), 11) as pym2,
 case 
 when ISNULL(b.Name,'') = ''and ISNULL(mo.Name,'') = '' then a.HospitalSpec
 when ISNULL(mo.Name,'') != '' and ISNULL(b.name,'') != '' then mo.Name + '|' + b.Name

@@ -12,6 +12,7 @@ type ChangeInfoElement struct {
 	CategoryCode     string `json:"CategoryCode,omitempty"`    // 18类分类代码，匹配104分类三级目录,如果匹配成功不修改，否则修改为三级目录
 	SysCode          string `json:"SysCode,omitempty"`         // 系统编码
 	SysID            string `json:"SysID,omitempty"`           // 系统编号
+	OpenTender       string `json:"OpenTender,omitempty"`      // 集采状态  1集采  0非集采
 	SupplyStatus     string `json:"SupplyStatus,omitempty"`    // 供货状态
 	HRCode           string `json:"HRCode,required"`           // 修改人员工号
 	Remark           string `json:"Remark,omitempty"`          // 备注
@@ -39,6 +40,7 @@ type ProductInfo struct {
 	Code                  string `gorm:"column:Code"`                  // 院内代码
 	HospitalName          string `gorm:"column:HospitalName"`          // 院内名称
 	HospitalSpec          string `gorm:"column:HospitalSpec"`          // 院内规格
+	OpenTender            string `gorm:"column:OpenTender"`            // 集采状态
 	YGCGID                string `gorm:"column:YGCGID"`                // 网采平台产品ID
 	HisProductCode7Source string `gorm:"column:HisProductCode7Source"` // 集采平台产品临时ID 审核过后会改变HisProductCode7值
 	HisProductCode7Status int    `gorm:"column:HisProductCode7Status"` // 集采平台产品ID状态
