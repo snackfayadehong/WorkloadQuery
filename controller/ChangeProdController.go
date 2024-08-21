@@ -33,10 +33,13 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 	if db.Error != nil {
 		return db.Error
 	}
-	if p.OpenTender == "1" { // 是集采的在产品名称前加(g)
-		his.Ypmc = "(g)" + his.Ypmc
+	if p.HospitalSpec != "" {
+		his.Ypgg = p.HospitalSpec
 	}
-	his.Kfbz = p.EighteenProdType // 18类重点监控耗材表示
+	if p.HospitalName != "" {
+		his.Ypmc = p.HospitalName
+	}
+	his.Kfbz = p.EighteenProdType // 18类重点监控耗材序号
 	his.Xgczy = p.HRCode          // 修改人员工号
 	//val := reflect.ValueOf(&his)
 	//if val.Kind() == reflect.Ptr { // 检查 val 是否为指针
@@ -119,45 +122,37 @@ func (i *RequestInfo) ChangeMisProductInfo(prod []model.ProductInfo, ip string) 
 			// 停供信息（1.直接修改科室领用白名单表状态，2.需要做停供处理的不处理字典信息)
 			switch item.SupplyStatus {
 			case "1":
-				err := UpdateProductSupplyStatus(tx, prod[pIndex], &updateMsg)
-				if err != nil {
+				if err := UpdateProductSupplyStatus(tx, prod[pIndex], &updateMsg); err != nil {
 					return err
 				}
 			case "0":
 				// 修改字典信息的业务逻辑
 				// 1. 104分类；
-				err := UpdateCategoryCode(tx, &item, prod[pIndex], &updateMsg)
-				if err != nil {
+				if err := UpdateCategoryCode(tx, &item, prod[pIndex], &updateMsg); err != nil {
 					return err
 				}
 				// 2. 更新院内产品名称、规格信息
-				err = UpdateHospitalInfo(tx, &item, prod[pIndex], &updateMsg)
-				if err != nil {
+				if err := UpdateHospitalInfo(tx, &item, prod[pIndex], &updateMsg); err != nil {
 					return err
 				}
 				// 3. 判断集采审核状态并更新集采信息
-				err = UpdateYgcgidInfo(tx, &item, prod[pIndex], &updateMsg)
-				if err != nil {
+				if err := UpdateYgcgidInfo(tx, &item, prod[pIndex], &updateMsg); err != nil {
 					return err
 				}
 				// 4. 更新TradeCode流水号
-				err = UpdateTradeCodeInfo(tx, &item, prod[pIndex], &updateMsg)
-				if err != nil {
+				if err := UpdateTradeCodeInfo(tx, &item, prod[pIndex], &updateMsg); err != nil {
 					return err
 				}
 				// 5. 更新医保代码
-				err = UpdateMedicareCodeInfo2(tx, &item, prod[pIndex], &updateMsg)
-				if err != nil {
+				if err := UpdateMedicareCodeInfo2(tx, &item, prod[pIndex], &updateMsg); err != nil {
 					return err
 				}
 				// 6. 写入系统编码系统编号
-				err = UpdateJCSysInfo(tx, &item, prod[pIndex], &updateMsg)
-				if err != nil {
+				if err := UpdateJCSysInfo(tx, &item, prod[pIndex], &updateMsg); err != nil {
 					return err
 				}
 				// 7. 更新集采状态
-				err = UpdateProductOpenTender(tx, &item, prod[pIndex], &updateMsg)
-				if err != nil {
+				if err := UpdateProductOpenTender(tx, &item, prod[pIndex], &updateMsg); err != nil {
 					return err
 				}
 			default:
@@ -174,8 +169,11 @@ func (i *RequestInfo) ChangeMisProductInfo(prod []model.ProductInfo, ip string) 
 			}
 			tx.Commit()
 			// 请求HIS
-			err := ChangeHisProductInfo(item)
-			if err != nil {
+			// 停供则处理下一个，不与HIS交互
+			if item.SupplyStatus == "1" {
+				continue
+			}
+			if err := ChangeHisProductInfo(item); err != nil {
 				return err
 			}
 		}

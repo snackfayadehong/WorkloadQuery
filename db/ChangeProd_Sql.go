@@ -10,6 +10,7 @@ const QueryProd = `SELECT
 	,prod.Code -- 院内代码
 	,prod.HisProductCode3 AS HospitalName -- 院内名称
 	,prod.HospitalSpec -- 院内规格
+    ,prod.OpenTender 
 	,prod.HisProductCode7 AS YGCGID -- 网采平台产品ID
 	,prod.HisProductCode7Source -- 集采平台产品临时ID 审核过后会改变HisProductCode7值
 	,prod.HisProductCode7Status -- 集采平台产品ID状态

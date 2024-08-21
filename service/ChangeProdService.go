@@ -42,7 +42,7 @@ func ChangeProductInfoService(c *gin.Context) {
 		res.Code = 1
 		res.Message = err.Error()
 		c.JSON(http.StatusCreated, res)
-		zap.L().Sugar().Infof("\r\n:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
 		return
 	}
 	err2 := req.ChangeMisProductInfo(prod, c.ClientIP())

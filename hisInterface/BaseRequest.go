@@ -17,6 +17,7 @@ import (
 
 const BaseUrl = `http://172.21.1.248:17980/api/bsp-api-engine-others/`
 
+// KLBRReqHeaders 柯林布瑞业务中台请求头
 type KLBRReqHeaders struct {
 	appId       string
 	timestamp   string
@@ -25,6 +26,7 @@ type KLBRReqHeaders struct {
 	contentType string
 }
 
+// KLBRResponse 柯林布瑞业务中台接口返回
 type KLBRResponse struct {
 	AckCode      string `json:"ackCode"`
 	AckMessage   string `json:"ackMessage"`
@@ -38,12 +40,15 @@ type KLBRResponse struct {
 		} `json:"fhxx"`
 	} `json:"data"`
 }
+
+// KLBRRequest 柯林布瑞接口请求参数
 type KLBRRequest struct {
 	Headers *KLBRReqHeaders
 	Url     string
 	ReqData []byte
 }
 
+// NewReqHeaders  KLBRReqHeaders请求头构造函数，根据入参信息生成请求Headers
 func NewReqHeaders(serviceCode string) *KLBRReqHeaders {
 	reqHeaders := new(KLBRReqHeaders)
 	reqHeaders.appId = "HERP"
@@ -75,7 +80,7 @@ func (k *KLBRRequest) KLBRHttpPost() (*[]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	zap.L().Sugar().Infof("\r\n事件:接口请求跟踪\r\n入参:%s\r\n%s\r\n", string(k.ReqData), logger.LoggerEndStr)
+	zap.L().Sugar().Infof("\r\n事件:接口请求跟踪\r\n接口地址:%s\r\n入参:%s\r\n%s\r\n", k.Url, string(k.ReqData), logger.LoggerEndStr)
 	defer reqBody.Body.Close()
 	reqBody.Header.Set("Content-Type", "application/json")
 	reqBody.Header.Set("appId", k.Headers.appId)
