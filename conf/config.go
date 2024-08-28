@@ -38,8 +38,7 @@ func InitSetting() error {
 	err = json.Unmarshal(v, &Configs)
 	if Configs.DBClient.IsEc == 0 {
 		file.Close()
-		err = writeEncryptionPwd()
-		if err != nil {
+		if err = writeEncryptionPwd(); err != nil {
 			return err
 		}
 	}
@@ -72,8 +71,7 @@ func writeEncryptionPwd() error {
 		return err
 	}
 	v, _ := io.ReadAll(configFile)
-	err = json.Unmarshal(v, &Configs)
-	if err != nil {
+	if err = json.Unmarshal(v, &Configs); err != nil {
 		return err
 	}
 	// 密码加密
@@ -88,8 +86,7 @@ func writeEncryptionPwd() error {
 	// 标记加密
 	Configs.DBClient.IsEc = 1
 	newConfig, err := json.Marshal(Configs)
-	_, err = configFile.WriteAt(newConfig, 0)
-	if err != nil {
+	if _, err = configFile.WriteAt(newConfig, 0); err != nil {
 		return err
 	}
 	return err

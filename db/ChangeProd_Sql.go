@@ -54,23 +54,19 @@ FROM
 WHERE
 	prod.CODE IN (?)`
 
+// ProductInfo_UpdatePostDataSQL
+// 1. 2024-08-26 林老师要求取院内名称传给HIs,如果院内名称为空在传产品名称
+// 2. 2024-08-27 只查供货状态正常的
+// 3. 2024-08-27 ypgg取院内规格
 const ProductInfo_UpdatePostDataSQL = `SELECT  
-a.code AS ypdm,  
-REPLACE(a.Name, CHAR(13) + CHAR(10), ' ') as ypmc,
+a.code AS ypdm, 
+-- REPLACE(a.Name, CHAR(13) + CHAR(10), ' ') as ypmc,
+a.HisProductCode3	 as ypmc,
 isnull( d.Name, '' ) AS yppp,  
 LEFT( isnull( gi.PinYin, gi2.PinYin ), 11) AS zjm,  
 LEFT(ISNULL(gi2.Name, a.Name), 11) as ypbm,
 LEFT(ISNULL(gi2.PinYin, gi.PinYin), 11) as pym,  
---left(isnull(gi2.name,a.name	),11) as ypbm1,
---left(isnull(gi2.PinYin, gi.PinYin), 11) as pym1,
---left(isnull(gi2.name,a.name	),11) as ypbm2,
---left(isnull(gi2.PinYin, gi.PinYin), 11) as pym2,
-case 
-when ISNULL(b.Name,'') = ''and ISNULL(mo.Name,'') = '' then a.HospitalSpec
-when ISNULL(mo.Name,'') != '' and ISNULL(b.name,'') != '' then mo.Name + '|' + b.Name
-when ISNULL(b.Name,'') = '' then mo.Name
-else b.name
-end ypgg,
+isnull(a.hospitalSpec,'') as ypgg,
 CONVERT(VARCHAR(20),cate.Remark) AS yplb,  
 '17' jxbm,  
 '09' AS lbdm,
@@ -161,4 +157,4 @@ and cate.SubjectGrade = 3
 and cate.IsVoid = 0
 left join TB_ProductCustomCategory cus on cus.CusCategoryCode = a.CusCategoryCode
 left join TB_ProductInfoJCSysCode jcxx on jcxx.prod_id = a.ProductInfoID  and jcxx.IsVoid = 0
-where a.Code = ?`
+where ep.PurState = '0' and  a.Code = ?`

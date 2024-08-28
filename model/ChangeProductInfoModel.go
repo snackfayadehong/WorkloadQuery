@@ -12,8 +12,8 @@ type ChangeInfoElement struct {
 	CategoryCode     string `json:"CategoryCode,omitempty"`    // 18类分类代码，匹配104分类三级目录,如果匹配成功不修改，否则修改为三级目录
 	SysCode          string `json:"SysCode,omitempty"`         // 系统编码
 	SysID            string `json:"SysID,omitempty"`           // 系统编号
-	OpenTender       string `json:"OpenTender,omitempty"`      // 集采状态  1集采  0非集采
-	SupplyStatus     string `json:"SupplyStatus,omitempty"`    // 供货状态
+	OpenTender       string `json:"OpenTender,required"`       // 集采状态  1集采  0非集采
+	SupplyStatus     string `json:"SupplyStatus,required"`     // 供货状态
 	HRCode           string `json:"HRCode,required"`           // 修改人员工号
 	Remark           string `json:"Remark,omitempty"`          // 备注
 }
@@ -28,10 +28,11 @@ type ExceptionProd struct {
 
 // ProdMedicareCode 医保代码
 type ProdMedicareCode struct {
-	ProductInfoID    int    `gorm:"column:ProductInfoID"`
-	ChargeRuleID     int    `gorm:"column:ChargeRuleID"`
-	MedicareCode     string `gorm:"column:MedicareCode"`
-	MedicareCodeTemp string `gorm:"column:MedicareCode"`
+	ProductInfoID      int    `gorm:"column:ProductInfoID"`
+	ChargeRuleID       int    `gorm:"column:ChargeRuleID"`
+	MedicareCode       string `gorm:"column:MedicareCode"`
+	MedicareCodeTemp   string `gorm:"column:MedicareCode"`
+	MedicareCodeStatus string `gorm:"column:MedicareCodeStatus"`
 }
 
 // ProductInfo 查询数据库产品字典信息
@@ -50,6 +51,7 @@ type ProductInfo struct {
 	ChargePrice           string `gorm:"column:ChargePrice"`           // 收费价格
 	SysCode               string `gorm:"column:SysCode"`               // 集采系统编码
 	SysId                 string `gorm:"column:SysId"`                 // 集采系统编号
+	HisProductStoreCode   string `gorm:"column:HisProductStoreCode"`   // 材料库房属性
 	IsVoid                int    `gorm:"column:IsVoid"`                // 0：启用 1：停用
 	PurState              int    `gorm:"column:PurState"`              // 0：供货 1：停止供货
 }
