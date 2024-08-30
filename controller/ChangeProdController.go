@@ -335,6 +335,9 @@ func UpdateMedicareCodeInfo2(tx *gorm.DB, item *model.ChangeInfoElement, prod mo
 			tx.Rollback()
 			return fmt.Errorf("院内代码:%s,医保代码存在多条,检查院内代码是否对应多条产品ID", item.Code)
 		}
+		if M[0].MedicareCode == item.MedicareCode || M[0].MedicareCodeTemp == item.MedicareCode {
+			return nil
+		}
 		// 无记录
 		// 按林老师要求医保代码无记录的直接插入已审核的医保代码
 		if len(M) == 0 {
@@ -349,6 +352,7 @@ func UpdateMedicareCodeInfo2(tx *gorm.DB, item *model.ChangeInfoElement, prod mo
 			*context += fmt.Sprintf("产品ID(%v)插入医保代码(%s)", prod.ProductInfoID, item.MedicareCode)
 			return nil
 		}
+		// 有记录直接更新
 		switch M[0].MedicareCodeStatus {
 		// 已审核医保代码
 		case "1":
@@ -470,7 +474,7 @@ func UpdateProductSupplyStatus(tx *gorm.DB, prod model.ProductInfo, context *str
 	}
 	// 修改白名单
 	var sql2 = `update TB_DepartmentApply set IsVoid = 1,UpdateTime = getdate() where ProductInfoID = ? and IsVoid = 0`
-	if db := clientDb.DB.Exec(sql2, prod.ProductInfoID); db.Error != nil {
+	if db := tx.Exec(sql2, prod.ProductInfoID); db.Error != nil {
 		tx.Rollback()
 		return db.Error
 	}

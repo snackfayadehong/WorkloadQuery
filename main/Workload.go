@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"net/http"
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -18,7 +19,13 @@ func main() {
 	// defer logFile.Close()
 	// r.Use(gin.LoggerWithConfig(*logConfig))
 	// r.Use(gin.Recovery())
-	r.Use(logger.GinLogger, logger.GinRecovery(true))
+	white := []string{"172.21.1.158", "172.24.0.200", "127.0.0.1"}
+	r.Use(IPWhiteList(white), logger.GinLogger, logger.GinRecovery(true))
+	err := r.SetTrustedProxies([]string{"172.21.1.158"})
+	if err != nil {
+		panic(err)
+	}
+	r.GET("/debug/pprof/*any", gin.WrapH(http.DefaultServeMux))
 	router := r.Group("/api")
 	{
 		router.POST("/getWorkload", middleware.CheckTime, service.GetWorkload)
@@ -30,10 +37,40 @@ func main() {
 			v1.POST("/change_prod", middleware.CheckRequestProdInfo, service.ChangeProductInfoService)
 		}
 	}
-	err := r.Run(fmt.Sprintf("%s:%s", conf.Configs.Server.IP, conf.Configs.Server.Port))
+	// pprof
+	go func() {
+		if err := http.ListenAndServe("localhost:3008", nil); err != nil {
+			zap.L().Error("ERROR", zap.Error(err))
+		}
+	}()
+	err = r.Run(fmt.Sprintf("%s:%s", conf.Configs.Server.IP, conf.Configs.Server.Port))
 	if err != nil {
 		zap.L().Error("ERROR", zap.Error(err))
 		return
+	}
+
+}
+
+// IPWhiteList Ip白名单
+func IPWhiteList(w []string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 获取请求的 IP 地址 无代理返回客户端IP,有代理返回代理IP
+		ip := c.RemoteIP()
+		// 检查 IP 地址是否在白名单中
+		allowed := false
+		for _, value := range w {
+			if value == ip {
+				allowed = true
+				break
+			}
+		}
+		// 如果 IP 地址不在白名单中，则返回错误信息
+		if !allowed {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "IP address not allowed"})
+			return
+		}
+		// 允许请求继续访问后续的处理函数
+		c.Next()
 	}
 }
 

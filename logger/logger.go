@@ -90,6 +90,7 @@ func getLogWriter(filename string, leavel zapcore.Level) zapcore.WriteSyncer {
 		rotatelogs.WithLinkName(filename),
 		rotatelogs.WithMaxAge(time.Hour*24*30),
 		rotatelogs.WithRotationTime(time.Hour*24))
+
 	return zapcore.AddSync(hook)
 }
 
@@ -121,8 +122,8 @@ func GinLogger(c *gin.Context) {
 	// c.Writer = w
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
-	sugar.Infof("\r\n事件:接口调用\r\nIP：%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
-		c.ClientIP(), c.Request.URL.Path, c.Request.Method, reqData,
+	sugar.Infof("\r\n事件:接口调用\r\nIP：%s\r\n代理IP:%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
+		c.ClientIP(), c.RemoteIP(), c.Request.URL.Path, c.Request.Method, reqData,
 		c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
 	c.Next() // 执行视图函数
 }

@@ -49,7 +49,9 @@ func CheckRequestProdInfo(c *gin.Context) {
 func checkCode(element model.ChangeInfoElement) error {
 	var row int
 	var sql = "select count(1) from TB_Employee where HisCode = ?"
-	clientDb.DB.Raw(sql, element.HRCode).Find(&row)
+	if db := clientDb.DB.Raw(sql, element.HRCode).Find(&row); db.Error != nil {
+		return db.Error
+	}
 	if row == 0 {
 		return fmt.Errorf("人员信息错误")
 	}
