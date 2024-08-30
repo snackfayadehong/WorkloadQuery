@@ -27,6 +27,9 @@ type Config struct {
 		DbName   string `json:"db_name"`
 		IsEc     int    `json:"isEc"`
 	} `json:"DBClient"`
+	IPWhite struct {
+		IPWhiteList []string `json:"IPWhiteList"`
+	} `json:"IPWhite"`
 }
 
 func InitSetting() error {

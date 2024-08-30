@@ -19,7 +19,7 @@ func main() {
 	// defer logFile.Close()
 	// r.Use(gin.LoggerWithConfig(*logConfig))
 	// r.Use(gin.Recovery())
-	white := []string{"172.21.1.158", "172.24.0.200", "127.0.0.1"}
+	white := conf.Configs.IPWhite.IPWhiteList
 	r.Use(IPWhiteList(white), logger.GinLogger, logger.GinRecovery(true))
 	err := r.SetTrustedProxies([]string{"172.21.1.158"})
 	if err != nil {
