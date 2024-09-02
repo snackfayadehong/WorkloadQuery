@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"time"
@@ -28,7 +27,8 @@ func CheckRequestProdInfo(c *gin.Context) {
 		res.Code = 1
 		res.Message = err.Error()
 		c.JSON(http.StatusCreated, res)
-		zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		logMsg := fmt.Sprintf("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		logger.AsyncLog(logMsg)
 		c.Abort()
 	}
 	for _, v := range *req.C {
@@ -37,7 +37,8 @@ func CheckRequestProdInfo(c *gin.Context) {
 			res.Code = 1
 			res.Message = err.Error()
 			c.JSON(http.StatusCreated, res)
-			zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+			logMsg := fmt.Sprintf("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+			logger.AsyncLog(logMsg)
 			c.Abort()
 			break
 		}

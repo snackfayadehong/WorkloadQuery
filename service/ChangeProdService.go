@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -31,7 +30,8 @@ func ChangeProductInfoService(c *gin.Context) {
 		} else {
 			res.Code = 1
 			res.Message = fmt.Sprintf("%s入参存在多条;", v.Code)
-			zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+			logMsg := fmt.Sprintf("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+			logger.AsyncLog(logMsg)
 			c.JSON(http.StatusCreated, res)
 			return
 		}
@@ -42,7 +42,8 @@ func ChangeProductInfoService(c *gin.Context) {
 		res.Code = 1
 		res.Message = err.Error()
 		c.JSON(http.StatusCreated, res)
-		zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		logMsg := fmt.Sprintf("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		logger.AsyncLog(logMsg)
 		return
 	}
 	err2 := req.ChangeMisProductInfo(prod, c.ClientIP())
@@ -50,9 +51,11 @@ func ChangeProductInfoService(c *gin.Context) {
 		res.Code = 1
 		res.Message = err2.Error()
 		c.JSON(http.StatusCreated, res)
-		zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		logMsg := fmt.Sprintf("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+		logger.AsyncLog(logMsg)
 		return
 	}
 	c.JSON(http.StatusCreated, res)
-	zap.L().Sugar().Infof("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+	logMsg := fmt.Sprintf("\r\n事件:接口返回\r\n出参:%s\r\n%s\r\n", res.Message, logger.LoggerEndStr)
+	logger.AsyncLog(logMsg)
 }

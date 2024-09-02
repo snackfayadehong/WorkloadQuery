@@ -7,7 +7,6 @@ import (
 	"WorkloadQuery/model"
 	"encoding/json"
 	"fmt"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"strings"
 	"time"
@@ -91,7 +90,8 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 	if klbrRes.AckCode != "200.1" {
 		return fmt.Errorf("%s", klbrRes.AckMessage)
 	} else {
-		zap.L().Sugar().Infof("\r\n事件:His接口返回\r\n出参:%s\r\n%s\r\n", klbrRes.Data, logger.LoggerEndStr)
+		logMsg := fmt.Sprintf("\r\n事件:His接口返回\r\n出参:%s\r\n%s\r\n", klbrRes.Data, logger.LoggerEndStr)
+		logger.AsyncLog(logMsg)
 	}
 	return nil
 }

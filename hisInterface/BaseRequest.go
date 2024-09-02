@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strconv"
@@ -80,7 +79,8 @@ func (k *KLBRRequest) KLBRHttpPost() (*[]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	zap.L().Sugar().Infof("\r\n事件:接口请求跟踪\r\n接口地址:%s\r\n入参:%s\r\n%s\r\n", k.Url, string(k.ReqData), logger.LoggerEndStr)
+	logMsg := fmt.Sprintf("\r\n事件:接口请求跟踪\r\n接口地址:%s\r\n入参:%s\r\n%s\r\n", k.Url, string(k.ReqData), logger.LoggerEndStr)
+	logger.AsyncLog(logMsg)
 	defer reqBody.Body.Close()
 	reqBody.Header.Set("Content-Type", "application/json")
 	reqBody.Header.Set("appId", k.Headers.appId)

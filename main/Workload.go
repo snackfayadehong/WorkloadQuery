@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	_ "net/http/pprof"
+	"runtime"
 )
 
 func main() {
@@ -98,6 +99,7 @@ func Cors() gin.HandlerFunc {
 
 // 初始化程序
 func init() {
+	runtime.SetBlockProfileRate(1)
 	// 读取配置文件
 	err := conf.InitSetting()
 	if err != nil {

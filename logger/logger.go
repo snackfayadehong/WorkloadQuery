@@ -3,6 +3,7 @@ package logger
 import (
 	"WorkloadQuery/conf"
 	"bytes"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/lestrrat/go-file-rotatelogs"
 	"go.uber.org/zap"
@@ -85,18 +86,19 @@ func getLogWriter(filename string, leavel zapcore.Level) zapcore.WriteSyncer {
 	default:
 		logFileName = filename + "Other_%Y%m%d.log"
 	}
-	hook, _ := rotatelogs.New(
+	hook, err := rotatelogs.New(
 		logFileName,
 		rotatelogs.WithLinkName(filename),
 		rotatelogs.WithMaxAge(time.Hour*24*30),
 		rotatelogs.WithRotationTime(time.Hour*24))
-
+	if err != nil {
+		zap.L().Error("ERROR", zap.Error(err))
+	}
 	return zapcore.AddSync(hook)
 }
 
 // GinLogger 用于替换gin框架的Logger中间件，不传参数，直接这样写
 func GinLogger(c *gin.Context) {
-	sugar := zap.L().Sugar()
 	start := time.Now()
 	// 在处理请求前获取body
 	// 2024-1-26 以前获取入参的方法Make 1024的buf会导致入参过长时 参数不完整
@@ -122,10 +124,21 @@ func GinLogger(c *gin.Context) {
 	// c.Writer = w
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
-	sugar.Infof("\r\n事件:接口调用\r\nIP：%s\r\n代理IP:%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
+	//sugar.Infof("\r\n事件:接口调用\r\nIP：%s\r\n代理IP:%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
+	//	c.ClientIP(), c.RemoteIP(), c.Request.URL.Path, c.Request.Method, reqData,
+	//	c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
+	logMsg := fmt.Sprintf("\r\n事件:接口调用\r\nIP：%s\r\n代理IP:%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
 		c.ClientIP(), c.RemoteIP(), c.Request.URL.Path, c.Request.Method, reqData,
 		c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
+	AsyncLog(logMsg)
 	c.Next() // 执行视图函数
+}
+
+// AsyncLog 异步日志
+func AsyncLog(logMsg string) {
+	go func() {
+		zap.S().Infof(logMsg)
+	}()
 }
 
 // GinRecovery 用于替换gin框架的Recovery中间件，因为传入参数，再包一层
@@ -145,7 +158,10 @@ func GinRecovery(stack bool) gin.HandlerFunc {
 					}
 				}
 				// http util包预先准备好的DumpRequest方法
-				httpRequest, _ := httputil.DumpRequest(c.Request, false)
+				httpRequest, err := httputil.DumpRequest(c.Request, false)
+				if err != nil {
+					logger.Error("ERROR", zap.Error(err))
+				}
 				if brokenPipe {
 					logger.Error(c.Request.URL.Path,
 						zap.Any("error", err),
