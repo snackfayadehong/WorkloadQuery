@@ -281,15 +281,15 @@ func UpdateHospitalInfo(tx *gorm.DB, item *model.ChangeInfoElement, prod model.P
 func UpdateYgcgidInfo(tx *gorm.DB, item *model.ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	// 1 已审核  null '' 0 为未审核
 	if item.YGCGID != "" {
-		if prod.HisProductCode7Status == 1 && item.YGCGID != prod.YGCGID {
-			if db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ? where ProductInfoID= ?", item.YGCGID,
+		if prod.HisProductCode7Status == "1" && item.YGCGID != prod.YGCGID {
+			if db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ?,HisProductCode7Source = ? where ProductInfoID= ?", item.YGCGID, item.YGCGID,
 				prod.ProductInfoID); db.Error != nil {
 				tx.Rollback()
 				return db.Error
 			}
 			*context += fmt.Sprintf("集采产品ID:HisProductCode7(%s)变更为(%s);", prod.YGCGID, item.YGCGID)
 		} else if item.YGCGID != prod.HisProductCode7Source {
-			if db := tx.Exec("Update TB_ProductInfo Set HisProductCode7Source = ? where ProductInfoID= ?", item.YGCGID,
+			if db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ?, HisProductCode7Source = ? ,HisProductCode7Status = '1' where ProductInfoID= ?", item.YGCGID, item.YGCGID,
 				prod.ProductInfoID); db.Error != nil {
 				tx.Rollback()
 				return db.Error

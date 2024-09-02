@@ -106,7 +106,7 @@ when a.IsVoid = 1 then '0'
 else '1'
 end as 'sybz',
 tcode.TenderCode  AS wcspdm,  
-a.HisProductCode7Source AS wccpid,  
+a.HisProductCode7 AS wccpid,  
 '' AS kfbz,
 a.OpenTender AS sfjc,
 a.isJcSelect AS jcsfzb,

@@ -44,7 +44,7 @@ type ProductInfo struct {
 	OpenTender            string `gorm:"column:OpenTender"`            // 集采状态
 	YGCGID                string `gorm:"column:YGCGID"`                // 网采平台产品ID
 	HisProductCode7Source string `gorm:"column:HisProductCode7Source"` // 集采平台产品临时ID 审核过后会改变HisProductCode7值
-	HisProductCode7Status int    `gorm:"column:HisProductCode7Status"` // 集采平台产品ID状态
+	HisProductCode7Status string `gorm:"column:HisProductCode7Status"` // 集采平台产品ID状态
 	CusCategoryCode       string `gorm:"column:CusCategoryCode"`       // 104分类编码
 	ParentCusCategoryCode string `gorm:"column:ParentCusCategoryCode"` // 104分类编码(第3级)
 	TradeCode             string `gorm:"column:TradeCode"`             // 交易编码
