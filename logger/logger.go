@@ -2,10 +2,11 @@ package logger
 
 import (
 	"WorkloadQuery/conf"
+	"WorkloadQuery/utity"
 	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/lestrrat/go-file-rotatelogs"
+	"github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"io"
@@ -87,10 +88,16 @@ func getLogWriter(filename string, leavel zapcore.Level) zapcore.WriteSyncer {
 	default:
 		logFileName = filename + "Other_%Y%m%d.log"
 	}
+	// 日志轮转前清除 .symlink
+	suffix := ".log_symlink"
+	if err := utity.RemoveAssignDir(filename, suffix); err != nil {
+		zap.L().Error("Error", zap.Error(err))
+	}
+	// 日志轮转
 	hook, err := rotatelogs.New(
 		logFileName,
 		rotatelogs.WithLinkName(filename),
-		rotatelogs.WithMaxAge(time.Hour*24*30),
+		rotatelogs.WithMaxAge(0),
 		rotatelogs.WithRotationTime(time.Hour*24))
 	if err != nil {
 		zap.L().Error("ERROR", zap.Error(err))
