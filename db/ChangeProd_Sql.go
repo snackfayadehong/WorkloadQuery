@@ -62,7 +62,7 @@ const ProductInfo_UpdatePostDataSQL = `SELECT
 a.code AS ypdm, 
 -- REPLACE(a.Name, CHAR(13) + CHAR(10), ' ') as ypmc,
 a.HisProductCode3	 as ypmc,
-isnull( d.Name, '' ) AS yppp,  
+isnull( d.Name, '/' ) AS yppp,  
 LEFT( isnull( gi.PinYin, gi2.PinYin ), 11) AS zjm,  
 LEFT(ISNULL(gi2.Name, a.Name), 11) as ypbm,
 LEFT(ISNULL(gi2.PinYin, gi.PinYin), 11) as pym,  
@@ -83,7 +83,7 @@ WHEN charindex( '许', isnull( lmr.RegistNum, '' ) ) > 0 THEN  'false' ELSE 'fal
 END sfwjkcl, 
 tcode.TenderCode lsh,
 a.CommonName tymc,
-left(lmr.RegistNum,15) ypzczh,
+SUBSTRING(RegistNum,1,len(RegistNum)-23) ypzczh,
 CONVERT(varchar ,lmr.EndDate,23) AS ypzczhxq,
 '' gnzdl,
 CASE   
@@ -143,7 +143,7 @@ where IsDefault != '1' and isvoid = 0
   lm.RegistNum,  
   lm.IsVoid,  
   lm.EndDate,  
-  rn = ROW_NUMBER ( ) OVER ( PARTITION BY rp.ProductID ORDER BY lm.EndDate DESC )   
+  rn = ROW_NUMBER ( ) OVER ( PARTITION BY rp.ProductID ORDER BY lm.EndDate DESC,lm.LicenseD DESC )   
  FROM  
   TB_RegisterProduct rp  
   INNER JOIN TB_LicenceMerge lm ON lm.LicenceType = 6   
