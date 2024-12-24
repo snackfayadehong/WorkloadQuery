@@ -352,13 +352,8 @@ func UpdateMedicareCodeInfo2(tx *gorm.DB, item *model.ChangeInfoElement, prod mo
 		if len(M) > 1 {
 			tx.Rollback()
 			return fmt.Errorf("院内代码:%s,医保代码存在多条,检查院内代码是否对应多条产品ID", item.Code)
-		}
-		if M[0].MedicareCode == item.MedicareCode || M[0].MedicareCodeTemp == item.MedicareCode {
-			return nil
-		}
-		// 无记录
-		// 按林老师要求医保代码无记录的直接插入已审核的医保代码
-		if len(M) == 0 {
+		} else if len(M) == 0 { // 无记录
+			// 按林老师要求医保代码无记录的直接插入已审核的医保代码
 			var insertSql = `INSERT INTO TB_ProductChargeRule ([ProductInfoID],[PriceCharged],[MedicareCode],[MedInsName]
 			,[MedicareType],[RepayFlag],[RepayRatio],[AddFeeFlag],[AddRatioFee],[MedicareCodeTemp],[MedicareCodeStatus],[IsVoid])
 			select ProductInfoID,ChargePrice,  ? ,N'城镇医保', '1', '0', 0, '0', 0, null, '1','0'
@@ -370,22 +365,36 @@ func UpdateMedicareCodeInfo2(tx *gorm.DB, item *model.ChangeInfoElement, prod mo
 			*context += fmt.Sprintf("产品ID(%v)插入医保代码(%s)", prod.ProductInfoID, item.MedicareCode)
 			return nil
 		}
+		// 2024-12-24 林老师反馈医保代码未修改问题，因两边系统已审核的医保代码一致，接口入参数据中没有，但是已审核医保代码与未审核医保代码不一致
+		// 2024-12-24 1. 根据审核状态,已审核的判断已审核的医保代码是否与入参一致，不一致直接修改
+		// 2. 未审核的医保代码，判断已审核字段是否与入参一致,一致的直接清空未审核医保代码，将状态修改为已审核。不一致的也清空未审核医保代码并修改为已审核状态
+		//if M[0].MedicareCode == item.MedicareCode && M[0].MedicareCodeTemp == item.MedicareCode {
+		//	return nil
+		//}
 		// 有记录直接更新
 		switch M[0].MedicareCodeStatus {
 		// 已审核医保代码
 		case "1":
-			if db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ChargeRuleID = ?", item.MedicareCode, M[0].ChargeRuleID); db.Error != nil {
-				tx.Rollback()
-				return db.Error
+			// 先判断已审核医保代码是否一致
+			if M[0].MedicareCode != item.MedicareCode {
+				// 不一致 直接修改
+				if db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ?  where ChargeRuleID = ?", item.MedicareCode, M[0].ChargeRuleID); db.Error != nil {
+					tx.Rollback()
+					return db.Error
+				}
+				*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s);", M[0].MedicareCode, item.MedicareCode)
 			}
-			*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s);", M[0].MedicareCode, item.MedicareCode)
 		// 未审核医保代码
 		case "0":
-			if db := tx.Exec("Update TB_ProductChargeRule Set MedicareCodeTemp = ? where ChargeRuleID = ?", item.MedicareCode, M[0].ChargeRuleID); db.Error != nil {
-				tx.Rollback()
-				return db.Error
+			if M[0].MedicareCode != item.MedicareCode {
+				if db := tx.Exec("Update TB_ProductChargeRule Set MedicareCodeTemp = '',MedicareCode = ?,MedicareCodeStatus = 1 where ChargeRuleID = ?", item.MedicareCode, M[0].ChargeRuleID); db.Error != nil {
+					tx.Rollback()
+					return db.Error
+				}
+				//*context += fmt.Sprintf("MedicareCodeTemp:未审核医保代码(%s)直接修改为已审核并变更为(%s);", M[0].MedicareCodeTemp, item.MedicareCode)
+				*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s),审核状态(%s)变更为(%s),未审核医保代码(%s)清空;",
+					M[0].MedicareCode, item.MedicareCode, M[0].MedicareCodeStatus, "1", M[0].MedicareCodeTemp)
 			}
-			*context += fmt.Sprintf("MedicareCodeTemp:未审核医保代码(%s)变更为(%s);", M[0].MedicareCodeTemp, item.MedicareCode)
 		}
 		//for _, v := range M {
 		//	// 医保代码不为空
