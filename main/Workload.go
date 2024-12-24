@@ -11,7 +11,11 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 func main() {
@@ -101,7 +105,11 @@ func Cors() gin.HandlerFunc {
 func init() {
 	runtime.SetBlockProfileRate(1)
 	// 读取配置文件
-	err := conf.InitSetting()
+	rootfile, _ := exec.LookPath(os.Args[0])
+	path, err := filepath.Abs(rootfile)
+	index := strings.LastIndex(path, string(os.PathSeparator))
+	rootPath := path[:index]
+	err = conf.InitSetting(rootPath)
 	if err != nil {
 		panic(err)
 	}
@@ -109,7 +117,7 @@ func init() {
 	if err != nil {
 		return
 	}
-	err = clientDb.Init()
+	err = clientDb.Init(rootPath)
 	if err != nil {
 		panic(err)
 	}
