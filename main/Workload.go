@@ -8,6 +8,7 @@ import (
 	"WorkloadQuery/service"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 	"net/http"
 	_ "net/http/pprof"
@@ -48,12 +49,24 @@ func main() {
 			zap.L().Error("ERROR", zap.Error(err))
 		}
 	}()
+	// cron实例
+	c := cron.New()
+	_, err = c.AddFunc("*/10 * * * *", service.WrappedTask)
+	if err != nil {
+		zap.L().Error("添加定时任务失败", zap.Error(err))
+	}
+	go func() {
+		c.Start()
+		select {}
+	}()
+	defer c.Stop()
+	defer logger.Close()
+	// start
 	err = r.Run(fmt.Sprintf("%s:%s", conf.Configs.Server.IP, conf.Configs.Server.Port))
 	if err != nil {
 		zap.L().Error("ERROR", zap.Error(err))
 		return
 	}
-
 }
 
 // IPWhiteList Ip白名单

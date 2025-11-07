@@ -96,7 +96,7 @@ END as cljflx,
 case 
 when a.Buy = 0 then  1 
 when a.Buy = 1 then  2
-ELSE 3 
+ELSE '' 
 END clcglb,
 a.PackingInstruction ypbz,
 a.StorageCondition cctj,

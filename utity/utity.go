@@ -4,6 +4,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -38,4 +39,57 @@ func RemoveAssignDir(dirPath, suffix string) (err error) {
 		return err
 	}
 	return nil
+}
+
+// RemoveTabsFromStruct 清理结构体中的所有字符串字段中的制表符
+func RemoveTabsFromStruct(s interface{}) {
+	val := reflect.ValueOf(s)
+	if val.Kind() != reflect.Ptr || val.IsNil() {
+		return
+	}
+	val = val.Elem()
+	if val.Kind() != reflect.Struct {
+		return
+	}
+	removeTabs(val)
+}
+
+// removeTabs 递归清理值中的制表符
+func removeTabs(v reflect.Value) {
+	switch v.Kind() {
+	case reflect.String:
+		// 如果是字符串，清理制表符
+		if v.CanSet() {
+			str := v.String()
+			str = strings.ReplaceAll(str, "\t", "")
+			v.SetString(str)
+		}
+	case reflect.Ptr:
+		// 如果是指针，递归处理指向的值
+		if !v.IsNil() {
+			removeTabs(v.Elem())
+		}
+	case reflect.Struct:
+		// 如果是结构体，递归处理每个字段
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			removeTabs(field)
+		}
+	case reflect.Slice, reflect.Array:
+		// 如果是切片或数组，处理每个元素
+		for i := 0; i < v.Len(); i++ {
+			removeTabs(v.Index(i))
+		}
+	case reflect.Map:
+		// 如果是map，处理每个值
+		for _, key := range v.MapKeys() {
+			value := v.MapIndex(key)
+			// 创建一个新的可设置的值来处理
+			newValue := reflect.New(value.Type()).Elem()
+			newValue.Set(value)
+			removeTabs(newValue)
+			v.SetMapIndex(key, newValue)
+		}
+	}
+	// 其他类型不做处理
 }

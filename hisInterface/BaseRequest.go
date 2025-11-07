@@ -25,20 +25,38 @@ type KLBRReqHeaders struct {
 	contentType string
 }
 
-// KLBRResponse 柯林布瑞业务中台接口返回
-type KLBRResponse struct {
+// KLBRBaseResponse 柯林布瑞业务中台接口返回
+type KLBRBaseResponse struct {
 	AckCode      string `json:"ackCode"`
 	AckMessage   string `json:"ackMessage"`
 	AckMessageID string `json:"ackMessageId"`
-	Data         struct {
-		Fhxx []struct {
-			Sczt   string `json:"sczt"`
-			Scsm   string `json:"scsm"`
-			Ypspdm string `json:"ypspdm"`
-			Ypdm   string `json:"ypdm"`
-		} `json:"fhxx"`
-	} `json:"data"`
 }
+
+// ProductChangeData 材料信息变更返回
+type ProductChangeData struct {
+	Fhxx []struct {
+		Sczt   string `json:"sczt"`
+		Scsm   string `json:"scsm"`
+		Ypspdm string `json:"ypspdm"`
+		Ypdm   string `json:"ypdm"`
+	} `json:"fhxx"`
+}
+
+// DeliveryData 出库信息返回接口
+type DeliveryData struct {
+	Fhxx []struct {
+		Ckdh string `json:"ckdh"`
+		Sczt string `json:"sczt"`
+		Scsm string `json:"scsm"`
+	} `json:"fhxx"`
+}
+
+//type KLBRResPonse[T any] struct {
+//	KLBRBaseResponse
+//	Data struct {
+//		Fhxx []json.RawMessage `json:"fhxx"`
+//	} `json:"data"`
+//}
 
 // KLBRRequest 柯林布瑞接口请求参数
 type KLBRRequest struct {
@@ -95,3 +113,22 @@ func (k *KLBRRequest) KLBRHttpPost() (*[]byte, error) {
 	repBytes, _ := io.ReadAll(rep.Body)
 	return &repBytes, nil
 }
+
+// ParseResPonse 处理柯林布瑞接口Fhxx字段不固定
+//func ParseResPonse[T any](jsonData []byte) (KLBRBaseResponse, []T, error) {
+//	var resP KLBRResPonse[T]
+//	err := json.Unmarshal(jsonData, &resP)
+//	if err != nil {
+//		return KLBRBaseResponse{}, nil, err
+//	}
+//	var fhxxList []T
+//	for _, raw := range resP.Data.Fhxx {
+//		var fhxx T
+//		err = json.Unmarshal(raw, &fhxx)
+//		if err != nil {
+//			return resP.KLBRBaseResponse, nil, err
+//		}
+//		fhxxList = append(fhxxList, fhxx)
+//	}
+//	return resP.KLBRBaseResponse, fhxxList, nil
+//}

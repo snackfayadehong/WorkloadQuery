@@ -16,6 +16,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,12 +24,96 @@ const LoggerEndStr = "----------------------------------------------------------
 const InfoLevel = zapcore.InfoLevel
 const ErrorLevel = zapcore.ErrorLevel
 
+// 异步日志处理器
+type logEntry struct {
+	level   zapcore.Level
+	message string
+	fields  []zap.Field
+}
+type asyncLogger struct {
+	logCh chan logEntry
+	done  chan struct{}
+	wg    sync.WaitGroup
+}
+
+var (
+	asyncLog *asyncLogger
+	once     sync.Once
+)
+
+// 新建异步日志处理器
+func newAsyncLogger(bufferSize int) *asyncLogger {
+	logger := &asyncLogger{
+		logCh: make(chan logEntry, bufferSize),
+		done:  make(chan struct{}),
+	}
+	logger.wg.Add(1)
+	go logger.worker()
+	return logger
+}
+
+// worker 处理日志的worker
+func (a *asyncLogger) worker() {
+	defer a.wg.Done()
+	for {
+		select {
+		case entry := <-a.logCh:
+			a.safeLog(entry)
+		case <-a.done:
+			// 处理剩余日志
+			for {
+				select {
+				case entry := <-a.logCh:
+					a.safeLog(entry)
+				default:
+					return
+				}
+			}
+		}
+	}
+}
+
+func (a *asyncLogger) safeLog(entry logEntry) {
+	defer func() {
+		if r := recover(); r != nil {
+			//输出到标准错误
+			fmt.Fprintf(os.Stderr, "Log panic recovered:\n%v\n\n", r)
+		}
+	}()
+	switch entry.level {
+	case zapcore.DebugLevel:
+		zap.L().Debug(entry.message, entry.fields...)
+	case zapcore.InfoLevel:
+		zap.L().Info(entry.message, entry.fields...)
+	case zapcore.WarnLevel:
+		zap.L().Warn(entry.message, entry.fields...)
+	case zapcore.ErrorLevel:
+		zap.L().Error(entry.message, entry.fields...)
+	default:
+		zap.L().Info(entry.message, entry.fields...)
+	}
+}
+
+// Close 关闭异步日志处理器
+func Close() {
+	if asyncLog != nil {
+		close(asyncLog.logCh)
+		asyncLog.wg.Wait()
+	}
+}
+
 // InitLog 日志
 func InitLog() (err error) {
-	_, err = os.Stat("logs")
-	if os.IsNotExist(err) {
-		err = os.Mkdir("logs", 0700)
+	// 创建日志目录
+	if _, err := os.Stat("logs"); os.IsNotExist(err) {
+		if err = os.Mkdir("logs", 0777); err != nil {
+			return err
+		}
 	}
+	// 初始化异步日志处理器
+	once.Do(func() {
+		asyncLog = newAsyncLogger(1000) // 缓冲1000条日志
+	})
 	// 创建Core三大件，进行初始化
 	encoder := getEncoder()
 	// 判断日志级别
@@ -58,7 +143,82 @@ func InitLog() (err error) {
 	log := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zap.WarnLevel))
 	// 替换全局的 logger, 后续在其他包中只需使用zap.L()调用即可
 	zap.ReplaceGlobals(log)
-	return
+	return nil
+}
+
+// AsyncLog 异步日志
+func AsyncLog(logMsg string) {
+	if asyncLog == nil {
+		// 降级成同步日志
+		zap.L().Info(logMsg)
+		return
+	}
+	entry := logEntry{
+		level:   zapcore.InfoLevel,
+		message: logMsg,
+	}
+	select {
+	case asyncLog.logCh <- entry:
+	//成功
+	default:
+		//通道已满,降级为同步
+		zap.L().Warn("异步日志通道已满,降级为同步日志")
+		zap.L().Info(logMsg)
+	}
+}
+
+// AsyncLogWithFields 结构化日志
+func AsyncLogWithFields(level zapcore.Level, msg string, fields ...zap.Field) {
+	if asyncLog == nil {
+		// 降级为同步日志
+		switch level {
+		case zapcore.DebugLevel:
+			zap.L().Debug(msg, fields...)
+		case zapcore.InfoLevel:
+			zap.L().Info(msg, fields...)
+		case zapcore.WarnLevel:
+			zap.L().Warn(msg, fields...)
+		case zapcore.ErrorLevel:
+			zap.L().Error(msg, fields...)
+		}
+		zap.L().Info(fmt.Sprintf("\r\n%s\r\n", LoggerEndStr))
+		return
+	}
+	// 异步记录主日志
+	entry := logEntry{
+		level:   level,
+		message: msg,
+		fields:  fields,
+	}
+	select {
+	case asyncLog.logCh <- entry:
+		// 成功写入
+	default:
+		// 通道已满，降级为同步日志
+		zap.L().Warn("Async log buffer full, logging synchronously")
+		switch level {
+		case zapcore.DebugLevel:
+			zap.L().Debug(msg, fields...)
+		case zapcore.InfoLevel:
+			zap.L().Info(msg, fields...)
+		case zapcore.WarnLevel:
+			zap.L().Warn(msg, fields...)
+		case zapcore.ErrorLevel:
+			zap.L().Error(msg, fields...)
+		}
+		zap.L().Info(fmt.Sprintf("\r\n%s\r\n", LoggerEndStr))
+		return
+	}
+	// 异步记录分隔符
+	separatorEntry := logEntry{
+		level:   zapcore.InfoLevel,
+		message: fmt.Sprintf("\r\n%s\r\n", LoggerEndStr),
+		fields:  []zap.Field{},
+	}
+	select {
+	case asyncLog.logCh <- separatorEntry:
+	default:
+	}
 }
 
 // 获取Encoder，给初始化logger使用的
@@ -117,42 +277,82 @@ func GinLogger(c *gin.Context) {
 	// r := strings.NewReplacer(" ", "", "\r", "", "\n", "", "\"", "")
 	// reqData := r.Replace(reqBody)
 	// c.Request.Body = io.NopCloser(bytes.NewBuffer(buf)) // 将读取后的字节流重新放入body 避免后续程序取不到body参数
-	// 方法2
-	var bodyBytes []byte
-	var err error
+	// 方法2 -- 2025-11-7 停用
+	//var bodyBytes []byte
+	//var err error
 	var reqData string
-	if c.Request.Body != nil {
-		bodyBytes, err = io.ReadAll(c.Request.Body)
-		if err != nil {
-			c.String(http.StatusInternalServerError, err.Error())
-			c.Next()
-		}
-		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-		reqData = string(bodyBytes)
-	}
+	//if c.Request.Body != nil {
+	//	bodyBytes, err = io.ReadAll(c.Request.Body)
+	//	if err != nil {
+	//		c.String(http.StatusInternalServerError, err.Error())
+	//		c.Next()
+	//	}
+	//	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	//	reqData = string(bodyBytes)
+	//}
 	// // 方法3
 	// w := middleware.ResponseWriter{
 	// 	ResponseWriter: c.Writer,
 	// 	B:              bytes.NewBuffer([]byte{}),
 	// }
 	// c.Writer = w
+	if shouldLogBody(c) {
+		bodyBytes, err := io.ReadAll(c.Request.Body)
+		if err == nil {
+			reqData = string(bodyBytes)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		}
+	}
+	c.Next()
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
+	status := c.Writer.Status()
 	//sugar.Infof("\r\n事件:接口调用\r\nIP：%s\r\n代理IP:%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
 	//	c.ClientIP(), c.RemoteIP(), c.Request.URL.Path, c.Request.Method, reqData,
 	//	c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
-	logMsg := fmt.Sprintf("\r\n事件:接口调用\r\nIP：%s\r\n代理IP:%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
-		c.ClientIP(), c.RemoteIP(), c.Request.URL.Path, c.Request.Method, reqData,
-		c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
-	AsyncLog(logMsg)
-	c.Next() // 执行视图函数
+	//logMsg := fmt.Sprintf("\r\n事件:接口调用\r\nIP：%s\r\n代理IP:%s\r\nURL：%s\r\nMethod：%s\r\n入参：%s\r\nError：%s\r\nCost：%s\r\n%s\r\n",
+	//	c.ClientIP(), c.RemoteIP(), c.Request.URL.Path, c.Request.Method, reqData,
+	//	c.Errors.ByType(gin.ErrorTypePrivate).String(), cost, LoggerEndStr)
+	//AsyncLog(logMsg)
+	// 结构化日志
+	logFields := []zap.Field{
+		zap.String("event", "接口调用"),
+		zap.String("IP", c.ClientIP()),
+		zap.String("代理IP", c.RemoteIP()),
+		zap.String("url", c.Request.URL.Path),
+		zap.String("method", c.Request.Method),
+		zap.String("user_agent", c.Request.UserAgent()),
+		zap.Int("status", status),
+		zap.String("cost", cost.String()),
+		zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
+	}
+	if reqData != "" {
+		logFields = append(logFields, zap.String("request_body", reqData))
+	}
+	// 根据状态码选择日志级别
+	if status >= http.StatusInternalServerError {
+		AsyncLogWithFields(zapcore.ErrorLevel, "HTTP Server Error", logFields...)
+	} else if status >= http.StatusBadRequest {
+		AsyncLogWithFields(zapcore.WarnLevel, "HTTP Client Error", logFields...)
+	} else {
+		AsyncLogWithFields(zapcore.InfoLevel, "HTTP Request", logFields...)
+	}
 }
 
-// AsyncLog 异步日志
-func AsyncLog(logMsg string) {
-	go func() {
-		zap.S().Infof(logMsg)
-	}()
+func shouldLogBody(c *gin.Context) bool {
+	// 根据内容类型和路径决定记录body
+	contentType := c.GetHeader("Content-Type")
+	if strings.Contains(contentType, "multipart/form-data") {
+		return false // 不记录文件上传
+	}
+	// excludedPath 排除一些接口请求日志 /health 健康检查
+	excludePaths := []string{"/health", "/metrics"}
+	for _, path := range excludePaths {
+		if strings.HasPrefix(c.Request.URL.Path, path) {
+			return false
+		}
+	}
+	return c.Request.ContentLength > 0 && c.Request.ContentLength < 1024*50 // 只记录小于60KB的body
 }
 
 // GinRecovery 用于替换gin框架的Recovery中间件，因为传入参数，再包一层
