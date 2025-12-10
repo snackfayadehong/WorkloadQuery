@@ -1,1 +1,23 @@
-{"Server":{"Ip":"127.0.0.1","Port":"3007","RunModel":"release"},"DBClient":{"ip":"127.0.0.1","username":"sa","password":"cSSYb69dRRANBro/WSWRG1tu5Ay1V+GEW24m+23sFATFNHZgCacGUAw9VoBUcJSMOBnlsBYW1IJ2osPz8C3aPk3V30tlkH2PTsIw9MflMTJaxy6KiCMiJWlo839igVHLL+fZ+b/L2r+O15LNgEAQZA5JYuCqbEIVgyUy/wDvGO7uOUH3eU+0vBF3OCV7EnFiGIvBEZd6XMB0Ojh3rrxAyjwhqfmOuAgZPid1xeTK/nd9yP7F5yBwzji4sdD899lp5GQPBC5GujjLRS/9lXBBjpjSnlKEjues2vfhpfatuGWDJ72OO0wcI7d5asPAjCYdfju0l3Qlwibn0U5zBuYKUg==","db_name":"WZ_MY","isEc":1},"IPWhite":{"IPWhiteList":["127.0.0.1"]}}
+{
+  "Server": {
+    "Ip": "127.0.0.1",
+    "Port": "3007",
+    "RunModel": "release"
+  },
+  "DBClient": {
+    "ip": "127.0.0.1",
+    "username": "sa",
+    "password": "20010126",
+    "db_name": "WZ_MY",
+    "isEc": 0
+  },
+  "IPWhite": {
+    "IPWhiteList": [
+      "127.0.0.1"
+    ]
+  },
+  "CustomTaskTime": {
+    "StartHour" : 23,
+    "EndHour" : 24
+  }
+}

@@ -46,6 +46,8 @@ func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error 
 	// 解析响应
 	var HisRes DeliveryResponseInfo
 	if err = json.Unmarshal(*res, &HisRes); err != nil {
+		logMsg := fmt.Sprintf("\r\n事件:接口请求跟踪\r\n出参：%v\r\n%s\r\n", res, logger.LoggerEndStr)
+		logger.AsyncLog(logMsg)
 		return fmt.Errorf("解析响应失败: %w", err)
 	}
 
@@ -115,12 +117,14 @@ func (d *DeliveryRequestInfo) DeliveryNoRetryToHis() (err error) {
 
 func (d *DeliveryRequestInfo) GetDeliveryNo() (err error) {
 	var now = time.Now()
-	dataStr := now.Format("2006-01-02")
-	db := clientDb.DB.Raw(clientDb.QueryBillNo, dataStr, dataStr).Find(&d.De)
+	s := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()) // 当天0时0点
+	e := now.Add(-10 * time.Minute)                                                // 当前时间前推10分钟
+	startDate := s.Format("2006-01-02 15:04:05")
+	endDate := e.Format("2006-01-02 15:04:05")
+	db := clientDb.DB.Raw(clientDb.QueryBillNo, startDate, endDate).Find(&d.De)
 	if db.Error != nil {
 		return db.Error
 	}
-	d.Count = new(int64)
 	if db.RowsAffected == 0 {
 		*d.Count = 0
 		logMsg := fmt.Sprintf("\r\n事件:查询领用出库失败业务数据\r\n查询结果:无数据记录\r\n%s\r\n", logger.LoggerEndStr)
