@@ -8,9 +8,10 @@ import (
 	"WorkloadQuery/utity"
 	"encoding/json"
 	"fmt"
-	"gorm.io/gorm"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 /*
@@ -503,20 +504,45 @@ func UpdateJCSysInfo(tx *gorm.DB, item *model.ChangeInfoElement, prod model.Prod
 }
 
 // UpdateProductSupplyStatus 停供
+// 2.0 备货产品查询全院是否库存，自购产品只看总库库存；有库存的处理成停止供货，没有库存的直接处理成停用
 func UpdateProductSupplyStatus(tx *gorm.DB, prod model.ProductInfo, context *string) error {
-	// 1. 查询白名单表
 	var row int
-	var sql = `select count(1) from TB_DepartmentApply where ProductInfoID = ? `
-	clientDb.DB.Raw(sql, prod.ProductInfoID).Scan(&row)
-	if row == 0 {
+	u_time := time.Now().Format("2006-01-02")
+	remark := fmt.Sprintf(";修改接口停用,%s", u_time)
+	switch prod.Buy {
+	case 0: // 自购
+		clientDb.DB.Raw(clientDb.CounterproductiveZg, prod.ProductInfoID).Scan(&row)
+		if row == 0 {
+			if db := tx.Exec(clientDb.UpdateproductinfoIsvoid, remark, prod.ProductInfoID); db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+			*context += fmt.Sprintf("停用产品ID:%v,库存:%v", prod.ProductInfoID, row)
+		} else if row == 1 {
+			if db := tx.Exec(clientDb.UpdateproductinfoSupply, prod.DefaultSupplierID, prod.ProductInfoID); db.Error != nil {
+				tx.Rollback()
+				return db.Error
+			}
+		}
+	case 1: // 备货
+		clientDb.DB.Raw(clientDb.CounterproductiveBh, prod.ProductInfoID).Scan(&row)
+	default:
 		return nil
 	}
-	// 修改白名单
-	var sql2 = `update TB_DepartmentApply set IsVoid = 1,UpdateTime = getdate() where ProductInfoID = ? and IsVoid = 0`
-	if db := tx.Exec(sql2, prod.ProductInfoID); db.Error != nil {
-		tx.Rollback()
-		return db.Error
-	}
-	*context += fmt.Sprintf("停供产品处理更新产品白名单表产品ID:%v,", prod.ProductInfoID)
 	return nil
+	//// 1. 查询白名单表
+	//var row int
+	//var sql = `select count(1) from TB_DepartmentApply where ProductInfoID = ? `
+	//clientDb.DB.Raw(sql, prod.ProductInfoID).Scan(&row)
+	//if row == 0 {
+	//	return nil
+	//}
+	//// 修改白名单
+	//var sql2 = `update TB_DepartmentApply set IsVoid = 1,UpdateTime = getdate() where ProductInfoID = ? and IsVoid = 0`
+	//if db := tx.Exec(sql2, prod.ProductInfoID); db.Error != nil {
+	//	tx.Rollback()
+	//	return db.Error
+	//}
+	//*context += fmt.Sprintf("停供产品处理更新产品白名单表产品ID:%v,", prod.ProductInfoID)
+	//return nil
 }

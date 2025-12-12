@@ -4,9 +4,10 @@ import (
 	"WorkloadQuery/controller"
 	"WorkloadQuery/logger"
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"net/http"
 )
 
 type Response struct {
@@ -21,7 +22,7 @@ func ChangeProductInfoService(c *gin.Context) {
 	// 入参
 	var req controller.RequestInfo
 	_ = c.ShouldBindBodyWith(&req.C, binding.JSON)
-	// 将入参多条数据Code整合为一个where条件
+	// 将入参多条数据 Code 整合为一个 where 条件
 	var seen = make(map[string]bool)
 	for _, v := range *req.C {
 		if !seen[v.Code] {

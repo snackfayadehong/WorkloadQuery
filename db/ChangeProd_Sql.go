@@ -7,6 +7,8 @@ package clientDb
 // QueryProd 查询产品信息
 const QueryProd = `SELECT
     prod.ProductInfoID -- 产品ID
+    ,prod.Buy
+    ,prod.DefaultSupplierID
 	,prod.Code -- 院内代码
 	,prod.HisProductCode3 AS HospitalName -- 院内名称
 	,prod.HospitalSpec -- 院内规格
@@ -22,13 +24,6 @@ const QueryProd = `SELECT
 	ELSE SUBSTRING ( prod.CusCategoryCode, 1, ( CONVERT ( INT, cus.SubjectGrade ) - 1 ) * 2 ) + '0000'
 	END ParentCusCategoryCode
 	,td.TenderCode AS TradeCode -- 交易编码
-    --,case 
-    --when yb.MedicareCode = '' then yb.ChargeRuleID
-    --when gjyb.MedicareCode = '' then gjyb.ChargeRuleID
-    --else ''
-       -- end	as MedicareID 
-	--,yb.MedicareCode -- 医保编码
-	--,gjyb.MedicareCode as CountryMedicareCode -- 国家医保
     ,prod.ChargePrice -- 收费价格
 	,jc.SysCode -- 集采系统编码
 	,jc.SysId -- 集采系统编号
@@ -160,3 +155,18 @@ and cate.IsVoid = 0
 left join TB_ProductCustomCategory cus on cus.CusCategoryCode = a.CusCategoryCode
 left join TB_ProductInfoJCSysCode jcxx on jcxx.prod_id = a.ProductInfoID  and jcxx.IsVoid = 0
 where ep.PurState = '0' and  a.Code = ?`
+
+// CounterproductiveBh 查询备货材料库存
+const CounterproductiveBh = ` select count(1) from TP_ProductInventoryDetail_Hash where ProductInfoID = ? and CurQuantity > 0`
+
+// CounterproductiveZg 查询自购材料库房库存
+const CounterproductiveZg = ` select count(1) from TP_ProductInventoryDetail a 
+ join TB_Department dept on dept.DeptCode = a.DeptCode
+ where a.ProductInfoID = 178340 and a.CurQuantity > 0
+ and dept.IsStorehouse = 1`
+
+// UpdateproductinfoIsvoid 停用
+const UpdateproductinfoIsvoid = ` update TB_ProductInfo set IsVoid= 1,Remark = Remark + ? where ProductInfoID = ?`
+
+// UpdateproductinfoSupply 停供
+const UpdateproductinfoSupply = ` update  TB_EnterpriseProduct set PurState = 1 where ProductID = ? and EnterpriseID = ?`
