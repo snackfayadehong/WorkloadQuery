@@ -1,4 +1,4 @@
-package hisInterface
+package Interface
 
 import (
 	"WorkloadQuery/logger"
