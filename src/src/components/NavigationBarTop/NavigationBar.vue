@@ -26,11 +26,11 @@
 <script setup>
 import { ref } from "vue";
 import QueryBar from "../QueryBarTop/QueryBar.vue";
-import WorkloadDataShow from "../DataShowBar/WorkloadDataShow.vue";
+import WorkloadDataShow from "@/DataShowBar/WorkloadDataShow.vue";
 // import DepartMentCollarDataShow from "../DataShowBar/DepartMentCollarDataShow.vue";
 // import UnCheckBillsShow from "../DataShowBar/UnCheckBillsShow.vue";
 // import NoDeliveredPurchaseSummaryShow from "../DataShowBar/NoDeliveredPurchaseSummaryShow.vue";
-import WorkLoadDataShow2 from "../DataShowBar/WorkLoadDataShow2.vue";
+import WorkLoadDataShow2 from "@/workload/components/WorkloadDataShow2.vue";
 import { ElTabPane } from "element-plus";
 
 const activeName = ref("workload");

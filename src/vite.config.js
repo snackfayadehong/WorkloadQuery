@@ -4,6 +4,7 @@ import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 import VueSetupExtend from "vite-plugin-vue-setup-extend";
+import { resolve } from "path";
 export default defineConfig({
     envDir: "env",
     plugins: [
@@ -30,6 +31,11 @@ export default defineConfig({
                     }
                 }
             }
+        }
+    },
+    resolve: {
+        alias: {
+            "@": resolve(__dirname, "src")
         }
     }
 });

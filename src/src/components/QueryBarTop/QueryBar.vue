@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import myAxios from "../../api/myAxios.js";
+import myAxios from "@/services/myAxios.js";
 import { ref } from "vue";
 import bus from "../../eventBus";
 import dayjs from "dayjs";

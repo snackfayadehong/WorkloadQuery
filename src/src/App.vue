@@ -1,8 +1,9 @@
 <template>
-    <navigation-bar-top></navigation-bar-top>
+    <router-view />
 </template>
 
-<script setup>
-import NavigationBarTop from "./components/NavigationBarTop/NavigationBar.vue";
+<script>
+export default {
+    name: "App"
+};
 </script>
-<style scoped></style>
