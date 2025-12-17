@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"WorkloadQuery/Interface"
 	clientDb "WorkloadQuery/db"
-	"WorkloadQuery/hisInterface"
 	"WorkloadQuery/logger"
 	"WorkloadQuery/model"
 	"encoding/json"
@@ -19,12 +19,13 @@ type DeliveryRequestInfo struct {
 
 // DeliveryResponseInfo 接口出参
 type DeliveryResponseInfo struct {
-	hisInterface.KLBRBaseResponse
-	Data hisInterface.DeliveryData `json:"data"`
+	Interface.KLBRBaseResponse
+	Data Interface.DeliveryData `json:"data"`
 }
 
 func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error {
 	// 准备请求数据
+	deliveryid := raw.Ckdh
 	raw.Ckdh += raw.DetailSort
 	data, err := json.Marshal(raw)
 	if err != nil {
@@ -32,12 +33,12 @@ func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error 
 	}
 
 	// 构建请求
-	k := hisInterface.KLBRRequest{
-		Headers: hisInterface.NewReqHeaders("herp-clckgl"),
-		Url:     hisInterface.BaseUrl + "herp-clckgl/1.0",
+	k := Interface.KLBRRequest{
+		Headers: Interface.NewReqHeaders("herp-clckgl"),
+		Url:     Interface.BaseUrl + "herp-clckgl/1.0",
 		ReqData: data,
 	}
-	// 发送HTTP请求
+	// 发送 HTTP请求
 	res, err := k.KLBRHttpPost()
 	if err != nil {
 		return fmt.Errorf("HTTP请求失败: %w", err)
@@ -79,10 +80,9 @@ func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error 
 			tx.Rollback()
 		}
 	}()
-	deliveryID := raw.Ckdh[:len(raw.Ckdh)-1]
 	hisCkdh := fhxx.Ckdh
 
-	if db := tx.Exec(clientDb.UpdateDelivery_Sql, hisCkdh, deliveryID, raw.DetailSort); db.Error != nil {
+	if db := tx.Exec(clientDb.UpdateDelivery_Sql, hisCkdh, deliveryid, raw.DetailSort); db.Error != nil {
 		tx.Rollback()
 		return fmt.Errorf("更新数据库失败: %w", db.Error)
 	}

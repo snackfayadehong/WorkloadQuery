@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"WorkloadQuery/Interface"
 	clientDb "WorkloadQuery/db"
-	"WorkloadQuery/hisInterface"
 	"WorkloadQuery/logger"
 	"WorkloadQuery/model"
 	"encoding/json"
@@ -17,8 +17,8 @@ type RefundRequestInfo struct {
 }
 
 type RefundResponseInfo struct {
-	hisInterface.KLBRBaseResponse
-	Data hisInterface.RefundData
+	Interface.KLBRBaseResponse
+	Data Interface.RefundData
 }
 
 func (r *RefundRequestInfo) processSingleRefund(raw model.RefundNo) error {
@@ -29,9 +29,9 @@ func (r *RefundRequestInfo) processSingleRefund(raw model.RefundNo) error {
 	}
 
 	// 构建请求
-	k := hisInterface.KLBRRequest{
-		Headers: hisInterface.NewReqHeaders("herp-clrkgl"),
-		Url:     hisInterface.BaseUrl + "herp-clrkgl/1.0",
+	k := Interface.KLBRRequest{
+		Headers: Interface.NewReqHeaders("herp-clrkgl"),
+		Url:     Interface.BaseUrl + "herp-clrkgl/1.0",
 		ReqData: data,
 	}
 	// 发送HTTP请求

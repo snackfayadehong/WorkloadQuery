@@ -118,7 +118,7 @@ func setupRoutes(r *gin.Engine) {
 		})
 	})
 
-	// API路由组
+	// API 路由组
 	router := r.Group("/api")
 	{
 		router.POST("/getWorkload", middleware.CheckTime, service.GetWorkload)

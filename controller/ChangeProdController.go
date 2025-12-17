@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"WorkloadQuery/Interface"
 	clientDb "WorkloadQuery/db"
-	"WorkloadQuery/hisInterface"
 	"WorkloadQuery/logger"
 	"WorkloadQuery/model"
 	"WorkloadQuery/utity"
@@ -23,8 +23,8 @@ type RequestInfo struct {
 }
 
 type klbrRes struct {
-	hisInterface.KLBRBaseResponse
-	Data hisInterface.ProductChangeData `json:"data"`
+	Interface.KLBRBaseResponse
+	Data Interface.ProductChangeData `json:"data"`
 }
 
 const UpdateCateCodeSql = "Update TB_ProductInfo Set CusCategoryCode = ? where ProductInfoID = ?"
@@ -84,9 +84,9 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 		return err
 	}
 	// 3. 接口调用
-	k := hisInterface.KLBRRequest{}
-	k.Headers = hisInterface.NewReqHeaders("MIS-proc-Edit-cljjxx")
-	k.Url = hisInterface.BaseUrl + "MIS-proc-Edit-cljjxx/1.0"
+	k := Interface.KLBRRequest{}
+	k.Headers = Interface.NewReqHeaders("MIS-proc-Edit-cljjxx")
+	k.Url = Interface.BaseUrl + "MIS-proc-Edit-cljjxx/1.0"
 	k.ReqData = data
 	res, err := k.KLBRHttpPost()
 	if err != nil {
@@ -96,7 +96,7 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 	if err = json.Unmarshal(*res, &klbrres); err != nil {
 		return err
 	}
-	//baseRep, fhxxList, err := hisInterface.ParseResPonse[map[string]interface{}](*res)
+	//baseRep, fhxxList, err := Interface.ParseResPonse[map[string]interface{}](*res)
 	//if err != nil {
 	//	return fmt.Errorf("ParseResPonse err: %v", err)
 	//}
