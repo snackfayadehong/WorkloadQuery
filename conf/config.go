@@ -32,6 +32,7 @@ type Config struct {
 		IPWhiteList []string `json:"IPWhiteList"`
 	} `json:"IPWhite"`
 	CustomTaskTime struct {
+		Run       int `json:"Run"`
 		StartTime int `json:"StartTime"`
 		EndTime   int `json:"EndTime"`
 	} `json:"CustomTaskTime"`

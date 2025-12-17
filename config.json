@@ -2,7 +2,8 @@
   "Server": {
     "Ip": "127.0.0.1",
     "Port": "3007",
-    "RunModel": "release"
+    "RunModel": "debug",
+    "HealthCheckPort": ""
   },
   "DBClient": {
     "ip": "127.0.0.1",
@@ -17,7 +18,8 @@
     ]
   },
   "CustomTaskTime": {
-    "StartHour" : 23,
-    "EndHour" : 24
+    "RunTask": 1,
+    "StartTime": 0,
+    "EndTime": 0
   }
 }
