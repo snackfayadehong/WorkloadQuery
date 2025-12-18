@@ -6,3 +6,12 @@ body,
     background-color: #f2f3f5;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
+
+.sidebar {
+    width: 220px;
+    transition: width 0.2s ease;
+}
+
+.sidebar.collapsed {
+    width: 64px;
+}

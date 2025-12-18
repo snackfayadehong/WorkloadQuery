@@ -1,11 +1,17 @@
 <template>
     <div class="top-bar">
-        <!-- 左侧：面包屑 -->
-        <el-breadcrumb separator="/">
-            <el-breadcrumb-item v-for="item in breadcrumb" :key="item.path">
-                {{ item.label }}
-            </el-breadcrumb-item>
-        </el-breadcrumb>
+        <div class="left">
+            <!-- 折叠按钮 -->
+            <el-button text @click="$emit('toggle-menu')">
+                <el-icon><Menu /></el-icon>
+            </el-button>
+            <!-- 左侧：面包屑 -->
+            <el-breadcrumb separator="/">
+                <el-breadcrumb-item v-for="item in breadcrumb" :key="item.path">
+                    {{ item.label }}
+                </el-breadcrumb-item>
+            </el-breadcrumb>
+        </div>
 
         <!-- 右侧功能区 -->
         <div class="right">
@@ -45,9 +51,11 @@
 
 <script>
 import { getBreadcrumb } from "../utils/breadcrumb";
+import { Menu } from "@element-plus/icons-vue";
 
 export default {
     name: "TopBar",
+    components: { Menu },
     data() {
         return {
             user: {
@@ -99,6 +107,12 @@ export default {
 </script>
 
 <style scoped>
+.left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .top-bar {
     height: 100%;
     display: flex;

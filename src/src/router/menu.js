@@ -8,16 +8,19 @@
  */
 
 // src/router/menu.js
+import { House, DataAnalysis, Document, Setting } from "@element-plus/icons-vue";
 
 export default [
     {
         path: "/home",
         label: "首页",
+        icon: House,
         component: "home/HomePage"
     },
     {
         path: "/workload",
         label: "工作量",
+        icon: DataAnalysis,
         component: "workload/WorkloadPage"
     }
 ];
