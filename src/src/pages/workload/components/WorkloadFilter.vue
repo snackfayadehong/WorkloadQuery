@@ -19,6 +19,7 @@
             <el-input :model-value="search" @input="$emit('update:search', $event)" placeholder="搜索操作员" prefix-icon="Search" clearable style="width: 200px" />
 
             <el-select :model-value="type" @change="$emit('update:type', $event)" placeholder="业务筛选" clearable style="width: 140px">
+                <el-option label="全部" value="all" />
                 <el-option label="入库" value="inbound" />
                 <el-option label="出库" value="outbound" />
                 <el-option label="退库" value="return" />

@@ -64,19 +64,13 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" align="center" width="120" fixed="right">
+          <el-table-column label="操作" align="center" width="160" fixed="right">
             <template #default="{ row }">
-              <el-button 
-                type="primary" 
-                link 
-                icon="View" 
-                @click="$emit('view-detail', row)"
-              >
-                查看详情
-              </el-button>
+              <el-button type="primary" link icon="View" @click="$emit('view-detail', row)">详情</el-button>
+              <el-button type="success" link icon="Download" @click="$emit('export-row', row)">导出</el-button>
             </template>
           </el-table-column>
-
+          
           <template #empty>
             <el-empty description="暂无工作量数据" :image-size="100" />
           </template>
@@ -87,27 +81,14 @@
 </template>
 
 <script setup>
-/**
- * 接收父组件传递的数据和加载状态
- * data: 后端返回的聚合数据数组
- * loading: 是否正在加载中
- */
 const props = defineProps({
-  data: {
-    type: Array,
-    default: () => []
-  },
-  loading: {
-    type: Boolean,
-    default: false
-  }
+  data: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false }
 });
 
-defineEmits(['view-detail']);
+// 增加 export-row 事件定义
+defineEmits(['view-detail', 'export-row']);
 
-/**
- * 货币格式化工具 (人民币)
- */
 const formatCurrency = (val) => {
   return new Intl.NumberFormat('zh-CN', {
     style: 'currency',
@@ -115,9 +96,6 @@ const formatCurrency = (val) => {
   }).format(val);
 };
 
-/**
- * 计算分类总金额逻辑
- */
 const calculateTotal = (items) => {
   if (!items || !Array.isArray(items)) return 0;
   return items.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
@@ -125,58 +103,16 @@ const calculateTotal = (items) => {
 </script>
 
 <style scoped>
-.workload-table-wrapper {
-  background: transparent;
-  width: 100%;
-}
-
-/* 骨架屏样式 */
-.skeleton-container {
-  padding: 20px;
-}
-.skeleton-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-}
-
-/* 展开行样式 */
-.expand-content {
-  padding: 20px 50px;
-  background: var(--el-fill-color-lighter);
-}
-
-/* 表格内文字样式 */
-.operator-name {
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.amount-text {
-  font-family: 'Monaco', monospace;
-  font-weight: bold;
-  font-size: 15px;
-}
-
-/* 状态颜色 */
+.workload-table-wrapper { background: transparent; width: 100%; }
+.skeleton-container { padding: 20px; }
+.skeleton-row { display: flex; gap: 20px; margin-bottom: 15px; }
+.expand-content { padding: 20px 50px; background: var(--el-fill-color-lighter); }
+.operator-name { font-weight: 600; font-size: 18px; color: var(--el-text-color-primary); }
+.amount-text { font-family: 'Monaco', monospace; font-weight: bold; font-size: 18px; }
 .success { color: var(--el-color-success); }
 .danger { color: var(--el-color-danger); }
 .warning { color: var(--el-color-warning); }
-
-/* 表头美化 */
-:deep(.custom-table-header) {
-  background-color: var(--el-fill-color-light) !important;
-  color: var(--el-text-color-primary);
-  font-weight: 700;
-}
-
-/* 深色模式下的表格适配 */
-:global(html.dark) .expand-content {
-  background: #1d1d1d;
-}
-
-:global(html.dark) .el-table {
-  --el-table-border-color: #333;
-  --el-table-header-bg-color: #1a1a1a;
-}
+:deep(.custom-table-header) { background-color: var(--el-fill-color-light) !important; color: var(--el-text-color-primary); font-weight: 700; }
+:global(html.dark) .expand-content { background: #1d1d1d; }
+:global(html.dark) .el-table { --el-table-border-color: #333; --el-table-header-bg-color: #1a1a1a; }
 </style>
