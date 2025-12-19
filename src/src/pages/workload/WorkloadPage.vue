@@ -1,67 +1,39 @@
 <template>
-    <div class="workload-page">
-        <el-card shadow="never" class="custom-page-header">
-            <div class="header-flex">
-                <div class="title-group">
-                    <h1 class="main-title">工作量看板</h1>
-                    <span class="sub-title">请选择时间段后点击查询以获取最新数据</span>
-                </div>
+    <div class="workload-dashboard-page">
+        <header class="hero-section">
+            <div class="hero-content">
+                <h1 class="welcome-text">工作量看板</h1>
+                <p class="date-text">下面这个按钮可以导出全部QAQ</p>
                 <div class="header-actions">
-                    <el-button type="primary" :icon="Download" plain :loading="exportLoading" @click="handleExport"> 导出报表数据 </el-button>
+                    <el-button type="primary" :icon="Download" class="modern-action-btn" :loading="exportLoading"
+                        @click="handleExport"> 导出报表数据 </el-button>
                 </div>
             </div>
-        </el-card>
+        </header>
 
-        <main class="dashboard-content">
+        <main class="dashboard-grid">
             <WorkloadStats :data="rawData" />
 
-            <WorkloadFilter 
-                v-model:search="searchQuery" 
-                v-model:type="filterType" 
-                v-model:dateRange="dateRange" 
-                :total="filteredData.length" 
-                @query="fetchList" 
-            />
+            <WorkloadFilter v-model:search="searchQuery" v-model:type="filterType" v-model:dateRange="dateRange"
+                :total="filteredData.length" @query="fetchList" />
 
-            <el-card shadow="never" class="table-card">
-                <WorkloadTable 
-                    :data="paginatedData" 
-                    :loading="loading" 
-                    @view-detail="handleViewDetail" 
-                    @export-row="handleExportRow"
-                />
+            <el-card shadow="never" class="glass-panel table-card">
+                <WorkloadTable :data="paginatedData" :loading="loading" @view-detail="handleViewDetail"
+                    @export-row="handleExportRow" />
 
                 <div class="pagination-container">
-                    <el-pagination
-                        v-model:current-page="currentPage"
-                        v-model:page-size="pageSize"
-                        :total="filteredData.length"
-                        :page-sizes="[10, 20, 50]"
-                        layout="total, sizes, prev, pager, next"
-                        background
-                    />
+
+                    <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
+                        :total="filteredData.length" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next"
+                        background />
                 </div>
             </el-card>
         </main>
 
-        <el-dialog
-            v-model="detailVisible"
-            :title="`业务处理明细汇总 - ${currentDetail?.operator || ''}`"
-            width="1000px"
-            destroy-on-close
-            append-to-body
-            class="custom-workload-dialog"
-        >
-            <WorkloadDetail 
-                :data="currentDetail" 
-                @close="detailVisible = false" 
-                @export-current="handleExportCurrent"
-            />
-            <template #footer>
-                <div class="dialog-footer">
-                    <el-button @click="detailVisible = false">关闭窗口</el-button>
-                </div>
-            </template>
+        <el-dialog v-model="detailVisible" :title="`业务处理明细汇总 - ${currentDetail?.operator || ''}`" width="1000px"
+            destroy-on-close append-to-body class="modern-dialog">
+            <WorkloadDetail :data="currentDetail" @close="detailVisible = false"
+                @export-current="handleExportCurrent" />
         </el-dialog>
     </div>
 </template>
@@ -71,12 +43,9 @@ import { ref } from "vue";
 import { Download } from "@element-plus/icons-vue";
 import { useWorkload } from "./composables/useWorkload";
 import { ElMessage } from "element-plus";
-import dayjs from "dayjs"; // 用于文件名日期
-
-// 引入导出工具类
+import dayjs from "dayjs";
 import ExportExcelUtity from "@/utity/exportExcel";
 
-// 引入子组件
 import WorkloadStats from "./components/WorkloadStats.vue";
 import WorkloadFilter from "./components/WorkloadFilter.vue";
 import WorkloadTable from "./components/WorkloadTable.vue";
@@ -93,9 +62,6 @@ const handleViewDetail = row => {
     detailVisible.value = true;
 };
 
-/**
- * 通用执行导出逻辑
- */
 const performExport = (data, fileName) => {
     try {
         ExportExcelUtity(data, fileName, "Workload");
@@ -105,9 +71,6 @@ const performExport = (data, fileName) => {
     }
 };
 
-/**
- * 1. 顶部全量导出
- */
 const handleExport = async () => {
     if (filteredData.value.length === 0) {
         ElMessage.warning("当前筛选条件下无数据可供导出");
@@ -122,17 +85,11 @@ const handleExport = async () => {
     }
 };
 
-/**
- * 2. 表格行单人导出
- */
 const handleExportRow = (row) => {
     const fileName = `工作量明细_${row.operator}_${dayjs().format('YYYYMMDD')}.xlsx`;
     performExport(row, fileName);
 };
 
-/**
- * 3. 详情页内单人导出
- */
 const handleExportCurrent = (data) => {
     const fileName = `工作量明细_${data.operator}_${dayjs().format('YYYYMMDD')}.xlsx`;
     performExport(data, fileName);
@@ -140,16 +97,83 @@ const handleExportCurrent = (data) => {
 </script>
 
 <style scoped>
-.workload-page { background-color: var(--el-bg-color-page); padding: 24px; min-height: 100vh; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; }
-.custom-page-header { border-radius: 12px; border: none; background-color: var(--el-bg-color); }
-.header-flex { display: flex; justify-content: space-between; align-items: center; }
-.main-title { margin: 0; font-size: 24px; color: var(--el-text-color-primary); font-weight: 800; letter-spacing: -0.5px; }
-.sub-title { font-size: 14px; color: var(--el-text-color-secondary); margin-top: 6px; display: block; }
-.dashboard-content { display: flex; flex-direction: column; gap: 20px; flex: 1; }
-.table-card { border-radius: 12px; border: none; background-color: var(--el-bg-color); }
-.pagination-container { margin-top: 24px; display: flex; justify-content: flex-end; }
-:deep(.custom-workload-dialog) { border-radius: 16px; overflow: hidden; }
-:deep(.custom-workload-dialog .el-dialog__header) { margin-right: 0; padding: 20px 24px; border-bottom: 1px solid var(--el-border-color-lighter); background-color: var(--el-fill-color-blank); }
-:deep(.custom-workload-dialog .el-dialog__title) { font-weight: 700; font-size: 18px; }
-:deep(.custom-workload-dialog .el-dialog__body) { padding: 24px; }
+.workload-dashboard-page {
+    /* 复用 HomePage 变量 */
+    --bg-page: #f6f8fb;
+    --bg-card: #ffffff;
+    --text-primary: #262626;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --hero-gradient: linear-gradient(135deg, #4158d0 0%, #c850c0 46%, #ffcc70 100%);
+
+    padding: 32px;
+    background: var(--bg-page);
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    box-sizing: border-box;
+}
+
+:global(html.dark) .workload-dashboard-page {
+    --bg-page: #121212;
+    --bg-card: #1e1e1e;
+    --text-primary: #e5eaf3;
+    --hero-gradient: linear-gradient(135deg, #1f2d5a 0%, #6d2d6d 46%, #a37c32 100%);
+}
+
+/* Hero Section */
+.hero-section {
+    padding: 48px;
+    background: var(--hero-gradient);
+    border-radius: 24px;
+    color: white;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-text {
+    font-size: 36px;
+    font-weight: 800;
+    margin: 0;
+}
+
+.date-text {
+    font-size: 16px;
+    opacity: 0.8;
+    margin: 12px 0 24px;
+}
+
+.modern-action-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s;
+}
+
+.modern-action-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: white;
+}
+
+.dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+/* 玻璃拟态面板 */
+.glass-panel {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 20px;
+}
+
+.pagination-container {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+}
 </style>
