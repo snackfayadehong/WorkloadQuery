@@ -12,9 +12,9 @@
 /* 核心优化：暗黑模式变量适配 */
 html.dark {
     /* 背景使用深灰而非纯黑 */
-    --dashboard-bg: #121212; 
+    --dashboard-bg: #121212;
     /* 卡片颜色比背景稍浅，体现层次感 */
-    --card-bg: #1e1e1e; 
+    --card-bg: #1e1e1e;
     --text-main: #e5eaf3;
     --text-sub: #a3a3a3;
     /* 边框使用半透明白色，模拟高光而非阴影 */
@@ -33,22 +33,47 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 /* 强制重置 html 和 body */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  /* 禁止最外层滚动，由布局容器控制 */
-  overflow: hidden; 
-  box-sizing: border-box;
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    /* 禁止最外层滚动，由布局容器控制 */
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 #app {
-  height: 100%;
-  width: 100%;
+    height: 100%;
+    width: 100%;
 }
 
 /* 统一解决盒子模型问题，防止 padding 撑开宽度产生横向滚动条 */
-*, *::before, *::after {
-  box-sizing: inherit;
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+/* 2. 锁定最外层，防止 body 产生第一层滚动条 */
+html,
+body,
+#app {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* 3. 美化滚动条样式（可选，增加精致感） */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-thumb {
+    background: #dbdbdb;
+    border-radius: 10px;
+}
+:global(html.dark) ::-webkit-scrollbar-thumb {
+    background: #333;
 }

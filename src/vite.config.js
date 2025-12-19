@@ -16,19 +16,19 @@ export default defineConfig({
             // 自动导入 Vue, Vue Router, Pinia 的 API
             imports: ["vue", "vue-router", "pinia"],
             resolvers: [ElementPlusResolver()],
-            dts: "src/auto-imports.d.ts", // 生成类型声明文件
+            dts: "src/auto-imports.d.ts" // 生成类型声明文件
         }),
         Components({
             // 自动导入 src/components 下的组件以及 Element Plus 组件
             resolvers: [ElementPlusResolver()],
-            dts: "src/components.d.ts",
+            dts: "src/components.d.ts"
         })
     ],
     server: {
         // host: "0.0.0.0", // 允许局域网访问
-        host:"127.0.0.1",
-        port: 5173,      // 固定端口
-        open: true,      // 启动后自动打开浏览器
+        host: "127.0.0.1",
+        port: 5173, // 固定端口
+        open: false // 启动后自动打开浏览器
     },
     build: {
         outDir: "dist",

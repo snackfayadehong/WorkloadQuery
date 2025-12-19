@@ -24,7 +24,7 @@
         "xlsx-js-style": "^1.2.0"
     },
     "devDependencies": {
-        "@vitejs/plugin-vue": "^4.1.0",
+        "@vitejs/plugin-vue": "^6.0.3",
         "unplugin-auto-import": "^0.16.7",
         "unplugin-vue-components": "^0.25.2",
         "vite": "^7.3.0",

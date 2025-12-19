@@ -16,19 +16,12 @@
 
             <el-divider direction="vertical" />
 
-            <el-input 
-                :model-value="search" 
-                @input="$emit('update:search', $event)"
-                placeholder="搜索操作员" 
-                prefix-icon="Search" 
-                clearable 
-                style="width: 200px" 
-            />
+            <el-input :model-value="search" @input="$emit('update:search', $event)" placeholder="搜索操作员" prefix-icon="Search" clearable style="width: 200px" />
 
             <el-select :model-value="type" @change="$emit('update:type', $event)" placeholder="业务筛选" clearable style="width: 140px">
                 <el-option label="入库" value="inbound" />
                 <el-option label="出库" value="outbound" />
-                <el-option label="退还" value="return" />
+                <el-option label="退库" value="return" />
             </el-select>
         </div>
     </el-card>
@@ -36,15 +29,32 @@
 
 <script setup>
 import { Search } from "@element-plus/icons-vue";
-defineProps(['search', 'type', 'dateRange', 'total']);
-defineEmits(['update:search', 'update:type', 'update:dateRange', 'query']);
+defineProps(["search", "type", "dateRange", "total"]);
+defineEmits(["update:search", "update:type", "update:dateRange", "query"]);
 
 const shortcuts = [
-  { text: '最近一周', value: () => { const end = new Date(); const start = new Date(); start.setTime(start.getTime() - 3600 * 1000 * 24 * 7); return [start, end] } }
+    {
+        text: "最近一周",
+        value: () => {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+            return [start, end];
+        }
+    }
 ];
 </script>
 
 <style scoped>
-.filter-card { border-radius: 8px; margin-bottom: 16px; border: none; }
-.filter-wrapper { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filter-card {
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border: none;
+}
+.filter-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
 </style>

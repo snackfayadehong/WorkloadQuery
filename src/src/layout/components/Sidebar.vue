@@ -7,7 +7,7 @@
                     <span class="logo-text">SupperSystem</span>
                 </div>
                 <div v-else class="logo-mini" key="mini">
-                    <span class="logo-text-short">WQ</span>
+                    <span class="logo-text-short">SyS</span>
                 </div>
             </transition>
         </div>
@@ -17,7 +17,7 @@
                 router
                 :default-active="$route.path"
                 :collapse="collapse"
-                :collapse-transition="false" 
+                :collapse-transition="false"
                 background-color="#001529"
                 text-color="#bfcbd9"
                 active-text-color="#ffffff"
