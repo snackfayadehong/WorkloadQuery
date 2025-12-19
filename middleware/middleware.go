@@ -84,8 +84,8 @@ func CheckTime(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	v1, err := time.Parse("2006-01-02", qt.Start)
-	v2, err2 := time.Parse("2006-01-02", qt.End)
+	v1, err := time.Parse("2006-01-02 15:04:05", qt.Start)
+	v2, err2 := time.Parse("2006-01-02 15:04:05", qt.End)
 	if err != nil || err2 != nil || v1.IsZero() || v2.IsZero() {
 		res.Code = 1
 		res.Message = "无效请求数据,请核查请求时间"

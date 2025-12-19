@@ -21,11 +21,11 @@ export function useWorkload() {
      * 获取数据：调用后端 API
      */
     const fetchList = async () => {
-        loading.value = true;
         if (!dateRange.value || dateRange.value.length < 2) {
             ElMessage.error("请选择完整时间范围!")
             return
         }
+        loading.value = true;
         try {
             // 注意：这里对接后端聚合接口
             const res = await myAxios.post("/getWorkload", {
