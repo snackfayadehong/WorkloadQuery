@@ -1,7 +1,7 @@
 <template>
     <div class="sidebar-wrapper" :class="{ 'is-collapsed': collapse }">
         <div class="logo-container">
-            <transition name="logo-fade">
+            <transition name="logo-fade"  @click="appStore.toggleSidebar" >
                 <div v-if="!collapse" class="logo-full" key="full">
                     <el-icon class="logo-icon"><Monitor /></el-icon>
                     <span class="logo-text">SupperSystem</span>
@@ -47,9 +47,10 @@
 </template>
 
 <script setup>
+import { useAppStore } from "@/stores/app";
 import { Monitor } from "@element-plus/icons-vue";
 import menu from "@/router/menu"; //
-
+const appStore = useAppStore();
 defineProps({
     collapse: Boolean
 });
