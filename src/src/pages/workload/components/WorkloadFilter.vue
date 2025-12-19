@@ -41,8 +41,28 @@ const shortcuts = [
             start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
             return [start, end];
         }
+    },
+    {
+        text: "最近15天",
+        value: () => {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 15);
+            return [start, end];
+        }
+    },
+    {
+        text: "最近一个月",
+        value: () => {
+            const end = new Date();
+            const start = new Date();
+            // 使用 setMonth 方法考虑月份的实际天数
+            start.setMonth(start.getMonth() - 1);
+            return [start, end];
+        }
     }
 ];
+
 </script>
 
 <style scoped>
