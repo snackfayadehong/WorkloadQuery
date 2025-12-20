@@ -85,7 +85,7 @@ export function useWorkload() {
     /**
      * 监听器：当日期变化时，重新从后端拉取原始数据
      */
-    watch(dateRange, () => {
+    watch(dateRange, (newVal) => {
         fetchList();
     });
 

@@ -11,6 +11,7 @@ NProgress.configure({ showSpinner: false });
 const pages = import.meta.glob("../pages/**/*.vue");
 
 function loadView(view) {
+    if (!view) return null; // 过滤调没有组件的父级菜单
     const key = `../pages/${view}.vue`;
     const loader = pages[key];
     if (!loader) {
@@ -19,18 +20,38 @@ function loadView(view) {
     return loader;
 }
 
+/**
+ * 递归生成路由配置
+ * 将嵌套的 menu 结构平铺或嵌套转换成 Vue Router 识别的格式
+ */
+const formatRoutes = (menu) => {
+    let result = [];
+    menu.forEach(item => {
+        // 如果有组件，则注册路由
+        if (item.component && typeof item.component === 'string') {
+            result.push({
+                path: item.path,
+                name: item.name || item.path,
+                component: loadView(item.component),
+                meta: { title: item.label }
+            })
+        }
+        // 如果有子菜单，则递归处理
+        if (item.children && item.children.length > 0) {
+            result.push(...formatRoutes(item.children));
+        }
+    })
+    return result
+
+}
+
 const routes = [
     {
         path: "/",
         component: MainLayout,
         redirect: "/home",
         children: [
-            ...menuList.map(item => ({
-                path: item.path,
-                name: item.name,
-                component: loadView(item.component),
-                meta: { title: item.label }
-            })),
+            ...formatRoutes(menuList), // 使用递归后的平铺路由
             {
                 path: "/:pathMatch(.*)*",
                 name: "NotFound",
@@ -40,7 +61,6 @@ const routes = [
         ]
     }
 ];
-
 const router = createRouter({
     history: createWebHistory(),
     routes,

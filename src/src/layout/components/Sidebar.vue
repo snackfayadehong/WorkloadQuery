@@ -1,9 +1,11 @@
 <template>
     <div class="sidebar-wrapper" :class="{ 'is-collapsed': collapse }">
         <div class="logo-container">
-            <transition name="logo-fade"  @click="appStore.toggleSidebar" >
+            <transition name="logo-fade" @click="appStore.toggleSidebar">
                 <div v-if="!collapse" class="logo-full" key="full">
-                    <el-icon class="logo-icon"><Monitor /></el-icon>
+                    <el-icon class="logo-icon">
+                        <Monitor />
+                    </el-icon>
                     <span class="logo-text">SupperSystem</span>
                 </div>
                 <div v-else class="logo-mini" key="mini">
@@ -13,29 +15,29 @@
         </div>
 
         <el-scrollbar class="menu-scrollbar">
-            <el-menu
-                router
-                :default-active="$route.path"
-                :collapse="collapse"
-                :collapse-transition="false"
-                background-color="#001529"
-                text-color="#bfcbd9"
-                active-text-color="#ffffff"
-                class="sidebar-menu"
-            >
+            <el-menu router :default-active="$route.path" :collapse="collapse" :collapse-transition="false"
+                background-color="#001529" text-color="#bfcbd9" active-text-color="#ffffff" class="sidebar-menu">
                 <template v-for="item in menu" :key="item.path">
                     <el-sub-menu v-if="item.children?.length" :index="item.path">
                         <template #title>
-                            <el-icon v-if="item.icon"><component :is="item.icon" /></el-icon>
+                            <el-icon v-if="item.icon">
+                                <component :is="item.icon" />
+                            </el-icon>
                             <span>{{ item.label }}</span>
                         </template>
+
                         <el-menu-item v-for="child in item.children" :key="child.path" :index="child.path">
-                            {{ child.label }}
+                            <el-icon v-if="child.icon">
+                                <component :is="child.icon" />
+                            </el-icon>
+                            <template #title>{{ child.label }}</template>
                         </el-menu-item>
                     </el-sub-menu>
 
                     <el-menu-item v-else :index="item.path">
-                        <el-icon v-if="item.icon"><component :is="item.icon" /></el-icon>
+                        <el-icon v-if="item.icon">
+                            <component :is="item.icon" />
+                        </el-icon>
                         <template #title>
                             <span>{{ item.label }}</span>
                         </template>

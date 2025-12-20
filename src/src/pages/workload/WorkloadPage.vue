@@ -136,6 +136,8 @@ const handleExportCurrent = (data) => {
     font-size: 36px;
     font-weight: 800;
     margin: 0;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    /* 提升质感 */
 }
 
 .date-text {

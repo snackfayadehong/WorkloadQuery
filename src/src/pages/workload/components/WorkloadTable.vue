@@ -82,9 +82,15 @@ defineEmits(['view-detail', 'export-row']);
  * 核心逻辑：计算金额最大的分类用于预览
  */
 const getTopCategory = (items) => {
-  if (!items || items.length === 0) return "暂无业务记录";
-  const top = [...items].sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0))[0];
-  return `${top.category} (￥${top.totalAmount.toLocaleString()})`;
+  // 增加对非数组或空数组的拦截
+  if (!items || !Array.isArray(items) || items.length === 0) return "暂无业务记录";
+  // 使用解构赋值确保不污染原数据，并增加可选链
+  const sorted = [...items].sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0));
+  const top = sorted[0];
+  return `${top.category} (￥${(top.totalAmount || 0).toLocaleString()})`;
+  // if (!items || items.length === 0) return "暂无业务记录";
+  // const top = [...items].sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0))[0];
+  // return `${top.category} (￥${top.totalAmount.toLocaleString()})`;
 };
 
 const formatCurrency = (val) => {
