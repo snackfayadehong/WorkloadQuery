@@ -122,6 +122,7 @@ func setupRoutes(r *gin.Engine) {
 	router := r.Group("/api")
 	{
 		router.POST("/getWorkload", middleware.CheckTime, service.WorkloadServiceInstance.HandleWorkloadRequest)
+		router.POST("/dict/compare", service.DictCompareServiceInstance.HandleCompareRequest)
 		v1 := router.Group("/v1")
 		{
 			v1.POST("/change_prod", middleware.CheckRequestProdInfo, service.ChangeProductInfoService)
@@ -148,11 +149,11 @@ func startMainService(r *gin.Engine, task *Task.TaskManager) {
 		}
 	}()
 	// 关机
-	setupGracefulShutdown(server, task)
+	setupGracefulShutdown(server)
 }
 
 // 关机
-func setupGracefulShutdown(server *http.Server, taskManager *Task.TaskManager) {
+func setupGracefulShutdown(server *http.Server) {
 	// 等待终端信号
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

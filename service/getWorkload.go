@@ -28,6 +28,7 @@ func (s *WorkloadService) HandleWorkloadRequest(c *gin.Context) {
 		res.Message = "查询失败" + err.Error()
 		res.Data = []model.WorkloadGroup{}
 		c.JSON(http.StatusInternalServerError, res)
+		return
 	}
 	res.Data = data
 	res.Message = "查询成功"
