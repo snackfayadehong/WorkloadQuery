@@ -3,6 +3,8 @@ package controller
 import (
 	clientDb "WorkloadQuery/db"
 	"WorkloadQuery/model"
+	"fmt"
+	"strconv"
 )
 
 type DictCompareController struct{}
@@ -20,16 +22,26 @@ func (ctrl *DictCompareController) GetLocalDictInfo(keyword string) ([]model.Loc
     END AS ypgg`
 
 	// 链式调用
-	err := clientDb.DB.Table("TB_ProductInfo AS A").
-		Select("A.Code AS ypdm, A.ProductInfoID, A.Name AS ypmc, "+ypggSql+", SPEC.Name AS kfdw, A.PurchasePrice AS kfcgj, A.ChargePrice AS kflsj, A.HisProductStoreCode AS kfdm, B.EnterpriseName AS ghdw").
+	query := clientDb.DB.Table("TB_ProductInfo AS A").
+		Select("A.Code AS ypdm, A.ProductInfoID, A.Name AS ypmc, " + ypggSql + ", SPEC.Name AS kfdw, A.PurchasePrice AS kfcgj, A.ChargePrice AS kflsj, A.HisProductStoreCode AS kfdm, B.SourceValue AS gsdm,  B.EnterpriseName AS ghdw").
 		Joins("JOIN TB_EnterpriseInfo B ON B.EnterpriseID = A.DefaultSupplierID").
 		Joins("LEFT JOIN TB_SpecUnit SPEC ON SPEC.SpecID = A.UseUnit").
 		Joins("LEFT JOIN TB_SpecUnit MO ON MO.SpecID = A.Model").
-		Joins("LEFT JOIN TB_SpecUnit SP ON SP.SpecID = A.Specification").
-		Where("A.Code = ? OR A.ProductInfoID = ?", keyword, keyword).
-		Order("A.ProductInfoID").
-		Find(&rows).Error
+		Joins("LEFT JOIN TB_SpecUnit SP ON SP.SpecID = A.Specification")
 
+	// 1. 尝试将关键字转化为数字
+	_, err := strconv.Atoi(keyword)
+	if err == nil {
+		// 根据keyword长度 判断查询 ProductInfoID 还是Code
+		if len(keyword) <= 6 {
+			query = query.Where("A.ProductInfoID = ?", keyword)
+		} else {
+			query = query.Where("A.Code = ?", keyword)
+		}
+	} else {
+		return nil, fmt.Errorf("非法字符")
+	}
+	err = query.Order("A.ProductInfoID").Find(&rows).Error
 	if err != nil {
 		return nil, err
 	}
