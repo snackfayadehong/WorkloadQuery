@@ -123,7 +123,6 @@ func (s *DictCompareService) CompareDictData(local *model.LocalDictRow) ([]model
 		cleanStr = cleanStr[:lastBrace+1]
 	}
 	var hisRes integration.HisDictResponse
-	fmt.Printf("%s", cleanStr)
 	if err := json.Unmarshal([]byte(cleanStr), &hisRes); err != nil {
 		return nil, "", fmt.Errorf("HIS解析失败: %v", err)
 	}

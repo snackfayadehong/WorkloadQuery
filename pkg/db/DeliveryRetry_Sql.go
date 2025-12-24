@@ -3,7 +3,7 @@ package clientDb
 // QueryBillNo 领用出库未推送数据
 const QueryBillNo = `select 
 	'01' ckfs ,
-	 delivery.DeliveryID as ckdh,
+	delivery.DeliveryID as ckdh,
 	deliveryRecord.DetailSort as detailSort
 	from TB_DeliveryApplyDetailRecord deliveryRecord with(nolock) 
 	join TB_DeliveryApply delivery with(nolock) on deliveryRecord.DeliveryID = delivery.DeliveryID
@@ -15,7 +15,7 @@ const QueryBillNo = `select
 	AND Delivery.[Status] IN (61, 71, 41, 81, 22, 91, 19, 29, 99)  
 	AND (Delivery.[IsStockGoods] <> '1' OR Delivery.[IsStockGoods] IS NULL)
 	AND ISNULL(deliveryRecord.OutNumber,'') = ''
-	AND deliveryRecord.CreateTime >= ? AND deliveryRecord.CreateTime <= ?
+	AND deliveryRecord.UpdateTime >= ? AND deliveryRecord.UpdateTime <= ?
 	group by 
 	deliveryRecord.DetailSort,
 	delivery.DeliveryID 
