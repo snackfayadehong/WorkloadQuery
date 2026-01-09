@@ -23,10 +23,9 @@ type DeliveryResponseInfo struct {
 }
 
 func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error {
-	// 准备请求数据
-	deliveryid := raw.Ckdh
-	raw.Ckdh += raw.DetailSort
-	data, err := json.Marshal(raw)
+	full := &model.DeliveryFullSerializer{DeliveryNo: &raw} // 构造用于请求 HIS 的接口请求参数
+	raw2 := full.DeliverySerialize()
+	data, err := json.Marshal(raw2)
 	if err != nil {
 		return fmt.Errorf("序列化请求数据失败: %w", err)
 	}
@@ -86,7 +85,7 @@ func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error 
 	//	return fmt.Errorf("更新数据库失败: %w", db.Error)
 	//}
 	if err := tx.Table("TB_DeliveryApplyDetailRecord").
-		Where("DeliveryId = ? AND DetailSort = ?", deliveryid, raw.DetailSort).
+		Where("DeliveryId = ? AND DetailSort = ?", raw.Ckdh, raw.DetailSort).
 		Update("OutNumber", hisCkdh).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("更新数据库失败:%w", err)
@@ -122,8 +121,11 @@ func (d *DeliveryRequestInfo) DeliveryNoRetryToHis() (err error) {
 
 func (d *DeliveryRequestInfo) GetDeliveryNo(startDate, endDate string) (err error) {
 	db := clientDb.DB.Table("TB_DeliveryApplyDetailRecord As dr").
-		Select("'01' AS ckfs, d.DeliveryID AS ckdh, dr.DetailSort AS detailSort").
+		Select("'01' AS ckfs, d.DeliveryID AS ckdh, dr.DetailSort AS detailSort,"+
+			"d.DeliveryCode,DE.DepartmentName as leaderDepartName,DEPT.DepartmentName as storeHouseName").
 		Joins("JOIN TB_DeliveryApply d on dr.DeliveryID = d.DeliveryID").
+		Joins("Left Join TB_Department dept on dept.DeptCode = d.StorehouseID").
+		Joins("Left Join TB_Department de on de.DeptCode = d.DeptCode").
 		Where("dr.IsVoid = ?", 0).
 		Where("d.Source = ?", "1").
 		Where("d.IsStockGoods = ?", "0").
@@ -132,7 +134,7 @@ func (d *DeliveryRequestInfo) GetDeliveryNo(startDate, endDate string) (err erro
 		Where("(d.IsStockGoods <> '1' OR d.IsStockGoods IS NULL)").
 		Where("ISNULL(dr.OutNumber, '') = ?", "").
 		Where("dr.UpdateTime >= ? AND dr.UpdateTime <= ?", startDate, endDate).
-		Group("dr.DetailSort, d.DeliveryID").
+		Group("dr.DetailSort, d.DeliveryID,d.DeliveryCode,DEPT.DepartmentName,de.DepartmentName").
 		Find(&d.De)
 	if db.Error != nil {
 		return db.Error

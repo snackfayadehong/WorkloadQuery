@@ -31,27 +31,44 @@
                         <el-table-column type="expand">
                             <template #default="props">
                                 <div class="detail-wrapper">
-                                    <el-descriptions title="单据异常详情" :column="2" border>
-                                        <el-descriptions-item label="明细序号">{{ props.row.detailSort }}</el-descriptions-item>
-                                        <el-descriptions-item label="出库方式">{{ props.row.ckfs }}</el-descriptions-item>
-                                        <el-descriptions-item label="错误描述" :span="2">
-                                            <span class="error-text">{{ props.row.scsm || "暂无详细错误日志" }}</span>
-                                        </el-descriptions-item>
+                                    <el-descriptions title="单据详细信息" :column="2" border>
+                                        <template v-if="queryType === 'delivery'">
+                                            <el-descriptions-item label="明细序号">{{ props.row.detailSort }}</el-descriptions-item>
+                                            <el-descriptions-item label="出库方式">{{ props.row.ckfs }}</el-descriptions-item>
+                                            <el-descriptions-item label="供货库房">{{ props.row.storeHouseName }}</el-descriptions-item>
+                                            <el-descriptions-item label="领用二级库房">{{ props.row.leaderDepartName }}</el-descriptions-item>
+                                        </template>
+                                        <template v-else>
+                                            <el-descriptions-item label="单据类型">科室退库单</el-descriptions-item>
+                                            <el-descriptions-item label="入库方式">{{ props.row.rkfs }}</el-descriptions-item>
+                                            <el-descriptions-item label="操作提示">请确认 HIS 系统对应单据状态后进行重试</el-descriptions-item>
+                                        </template>
                                     </el-descriptions>
                                 </div>
                             </template>
                         </el-table-column>
 
-                        <el-table-column prop="yddh" label="单据编号" width="220" />
-                        <el-table-column prop="sczt" label="状态">
+                        <el-table-column label="单据编号" width="220">
                             <template #default="scope">
-                                <el-tag :type="scope.row.sczt === '0' ? 'warning' : 'danger'" effect="light">
-                                    {{ scope.row.sczt === "0" ? "等待重试" : "发送失败" }}
-                                </el-tag>
+                                <span>{{ queryType === "delivery" ? scope.row.deliveryCode : scope.row.yddh }}</span>
                             </template>
                         </el-table-column>
 
-                        <el-table-column label="操作" width="150" align="center">
+                        <template v-if="queryType === 'delivery'">
+                            <el-table-column prop="storeHouseName" label="供货库房" show-overflow-tooltip />
+                            <el-table-column prop="leaderDepartName" label="领用二级库房" show-overflow-tooltip />
+                            <el-table-column prop="ckfs" label="出库类型" width="120" />
+                        </template>
+
+                        <template v-else>
+                            <el-table-column label="单据类型" width="150">
+                                <template #default>科室退库单</template>
+                            </el-table-column>
+                            <el-table-column prop="rkfs" label="入库方式" show-overflow-tooltip />
+                            <el-table-column label="" />
+                        </template>
+
+                        <el-table-column label="操作" width="150" align="center" fixed="right">
                             <template #default="scope">
                                 <el-button type="primary" size="small" icon="Refresh" @click="executeRetry(scope.row)"> 触发重试 </el-button>
                             </template>
@@ -66,16 +83,26 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue"; // 引入 watch
 import { Refresh } from "@element-plus/icons-vue";
-import myAxios from "@/services/myAxios"; // 使用项目统一 Axios
+import myAxios from "@/services/myAxios";
 import { ElMessage, ElMessageBox } from "element-plus";
+
+// --- 手动引入样式，修复提示框左上角显示问题 ---
+import "element-plus/es/components/message-box/style/css";
+import "element-plus/es/components/message/style/css";
 
 const queryType = ref("delivery");
 const dateRange = ref([]);
 const loading = ref(false);
 const hasSearched = ref(false);
 const tableData = ref([]);
+
+// --- 修复问题 1：切换类型时清空数据 ---
+watch(queryType, () => {
+    tableData.value = [];
+    hasSearched.value = false;
+});
 
 // 查询逻辑
 const handleQuery = async () => {
@@ -85,8 +112,8 @@ const handleQuery = async () => {
 
     loading.value = true;
     hasSearched.value = true;
+
     try {
-        // 接口路径适配后端控制器
         const res = await myAxios.post(`retry/list`, {
             queryType: queryType.value,
             startTime: dateRange.value[0],
@@ -100,21 +127,27 @@ const handleQuery = async () => {
     }
 };
 
-// 触发重试逻辑 [Requirement 3]
+// 触发重试逻辑
 const executeRetry = row => {
-    ElMessageBox.confirm(`确认重新推送单据 ${row.ckdh} 到 HIS 系统吗？`, "操作确认", {
+    const displayId = queryType.value === "delivery" ? row.deliveryCode : row.yddh;
+
+    ElMessageBox.confirm(`确认重新推送单据 ${displayId} 到 HIS 系统吗？`, "操作确认", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
-        type: "warning"
+        type: "warning",
+        center: true, // 居中显示
+        draggable: true // 允许拖拽
     }).then(async () => {
         try {
-            const res = await myAxios.post(`/api/${queryType.value}/retry`, {
-                ckdh: row.ckdh,
-                detailSort: row.detailSort
+            const res = await myAxios.post(`retry/execute`, {
+                type: queryType.value,
+                billNo: row.yddh,
+                detailSort: row.detailSort || ""
             });
-            if (res.code === 0) {
+
+            if (res.code === 200) {
                 ElMessage.success("重试指令已下发");
-                handleQuery(); // 刷新列表
+                handleQuery();
             }
         } catch (err) {
             ElMessage.error("触发重试异常");
@@ -124,7 +157,7 @@ const executeRetry = row => {
 </script>
 
 <style scoped>
-/* 复用 DictCompareTool.vue 样式规范 */
+/* 样式部分保持不变 */
 .retry-manager-container {
     padding: 24px;
     background-color: #f5f7fa;
@@ -133,7 +166,7 @@ const executeRetry = row => {
 
 .unified-hero-card {
     padding: 40px;
-    background: linear-gradient(135deg, #67c23a 0%, #4facfe 100%); /* 换成绿色系区分功能 */
+    background: linear-gradient(135deg, #67c23a 0%, #4facfe 100%);
     border-radius: 24px;
     color: white;
     box-shadow: 0 12px 24px rgba(103, 194, 58, 0.2);
@@ -168,27 +201,19 @@ const executeRetry = row => {
 }
 
 .type-select {
-    width: 160px;
+    width: 170px;
 }
 .integrated-picker {
     flex: 1;
 }
-
 .table-card {
     border-radius: 16px;
     border: none;
 }
-
 .detail-wrapper {
     padding: 20px 40px;
     background-color: #fcfdfe;
 }
-
-.error-text {
-    color: #f56c6c;
-    font-weight: bold;
-}
-
 :deep(.el-table__expanded-cell) {
     padding: 0 !important;
 }

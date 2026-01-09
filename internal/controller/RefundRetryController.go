@@ -21,8 +21,10 @@ type RefundResponseInfo struct {
 }
 
 func (r *RefundRequestInfo) processSingleRefund(raw model.RefundNo) error {
+	full := &model.RefundFullSerializer{RefundNo: &raw}
+	raw2 := full.RefundSerialize()
 	// 准备请求数据
-	data, err := json.Marshal(raw)
+	data, err := json.Marshal(raw2)
 	if err != nil {
 		return fmt.Errorf("序列化请求数据失败: %w", err)
 	}
@@ -113,10 +115,13 @@ func (r *RefundRequestInfo) RetryRefundToHis() (err error) {
 }
 func (r *RefundRequestInfo) GetRefundNo(startDate, endDate string) (err error) {
 	//db := clientDb.DB.Raw(clientDb.QueryRefundBillno, startDate, endDate).Find(&r.Re)
-	db := clientDb.DB.Table("TB_Refund").Select("RetWarhouCode as yddh,'02' as rkfs").
-		Where("ISNULL(SendStatus,?) = ?", "", "").
-		Where("Status = ?", 51).
-		Where("CreateTime >= ? And CreateTime < ?", startDate, endDate).
+	db := clientDb.DB.Table("TB_Refund a").
+		Select("a.RetWarhouCode as yddh,'02' as rkfs,store.DepartmentName as storeHouseName,dept.DepartmentName as leaderDepartName").
+		Joins("Left Join TB_Department store on store.DeptCode = a.TargetStorehouseID").
+		Joins("Left Join TB_Department dept on dept.DeptCode = a.DeptCode").
+		Where("ISNULL(a.SendStatus,?) = ?", "", "").
+		Where("a.Status = ?", 51).
+		Where("a.CreateTime >= ? And a.CreateTime < ?", startDate, endDate).
 		Find(&r.Re)
 	if db.Error != nil {
 		return db.Error

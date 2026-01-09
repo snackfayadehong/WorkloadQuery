@@ -133,7 +133,7 @@ func setupRoutes(r *gin.Engine) {
 		retry := router.Group("/retry")
 		{
 			retry.POST("/list", middleware.CheckTime, service.HandleRetryList) // 获取失败列表
-			retry.POST("/execute")                                             // 执行重试动作
+			retry.POST("/execute", service.HandleRetryExecute)                 // 执行重试动作
 		}
 	}
 }
